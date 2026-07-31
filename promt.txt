@@ -1,0 +1,627 @@
+Crea y configura un nuevo proyecto de Spring Boot en este workspace para el Portal de Empleados.
+
+El objetivo no es crear solo un proyecto vacío.
+El objetivo es generar una primera versión funcional del backend usando Spring Boot, MySQL, JPA, Swagger/OpenAPI, Actuator y Prometheus, tomando como base el modelo de seguridad y menú que ya existe.
+
+Generación Base:
+- Descarga la estructura desde Spring Initializr:
+  https://start.spring.io/starter.zip
+- Java/JDK: 21
+- Spring Boot: usa la versión GA más reciente compatible.
+- Group ID: com.moga.course.antigravity.springboot
+- Artifact ID / Nombre del Proyecto: employee-portal
+- Package Name: com.rassini.employeeportal
+
+Dependencias Maven requeridas:
+- Spring Web
+- Spring Boot DevTools
+- Spring Data JPA
+- MySQL Driver
+- Validation
+- Spring Boot Actuator
+- Micrometer Registry Prometheus
+- Springdoc OpenAPI Starter WebMVC UI
+- Lombok
+
+Base de datos:
+- Motor de base de datos: MySQL.
+- El esquema se llama: iam.
+- No uses H2.
+- No inventes otro motor de base de datos.
+- Configura los datasource en archivos YAML por ambiente.
+- Usa JPA/Hibernate para mapear las tablas existentes.
+- Configura Hibernate con ddl-auto=none porque las tablas ya existen.
+- Usa naming físico compatible con snake_case.
+- No generes migraciones Flyway por ahora.
+- No elimines ni recrees tablas.
+
+Modelo de datos existente:
+
+Tabla: users
+Columnas:
+- id bigint
+- username varchar(100)
+- email varchar(150)
+- password_hash varchar(255)
+- enabled tinyint(1)
+- created_at timestamp
+- updated_at timestamp
+
+Tabla: roles
+Columnas:
+- id bigint
+- code varchar(50)
+- name varchar(100)
+- description varchar(255)
+- created_at timestamp
+
+Tabla: permissions
+Columnas:
+- id bigint
+- code varchar(100)
+- description varchar(255)
+- created_at timestamp
+
+Tabla: menus
+Columnas:
+- id bigint
+- code varchar(100)
+- label varchar(100)
+- route varchar(200)
+- icon varchar(50)
+- parent_id bigint
+- order_index int
+
+Tabla: user_roles
+Columnas:
+- user_id bigint
+- role_id bigint
+
+Tabla: role_permissions
+Columnas:
+- role_id bigint
+- permission_id bigint
+
+Tabla: permission_menu
+Columnas:
+- permission_id bigint
+- menu_id bigint
+
+Relaciones esperadas:
+- Un usuario puede tener muchos roles.
+- Un rol puede estar asignado a muchos usuarios.
+- Un rol puede tener muchos permisos.
+- Un permiso puede estar asignado a muchos roles.
+- Un permiso puede habilitar muchos menús.
+- Un menú puede estar asociado a muchos permisos.
+- Un menú puede tener un menú padre mediante parent_id.
+- Un menú padre puede tener muchos submenús.
+
+Arquitectura requerida:
+Crea una arquitectura por capas con estos paquetes:
+
+- config
+- controller
+- dto
+- dto.request
+- dto.response
+- entity
+- exception
+- mapper
+- repository
+- service
+- service.impl
+
+Entidades JPA requeridas:
+- UserEntity
+- RoleEntity
+- PermissionEntity
+- MenuEntity
+
+Mapea las tablas intermedias usando relaciones ManyToMany:
+- users <-> roles mediante user_roles
+- roles <-> permissions mediante role_permissions
+- permissions <-> menus mediante permission_menu
+
+Para MenuEntity:
+- Mapea parent_id como relación ManyToOne hacia MenuEntity.
+- Mapea children como OneToMany hacia MenuEntity.
+- Ordena los menús usando order_index.
+
+Reglas de implementación:
+- Usa Lombok para getters, setters, builders y constructores.
+- Usa DTOs para request y response.
+- No expongas password_hash en ningún response.
+- No regreses entidades JPA directamente desde los controllers.
+- Usa services para la lógica.
+- Usa repositories solo dentro de services.
+- Implementa manejo global de errores con @RestControllerAdvice.
+- Implementa respuestas limpias y consistentes.
+- Agrega validaciones con Bean Validation.
+- Agrega paginación en endpoints de listas cuando aplique.
+- No implementes login todavía.
+- No implementes JWT todavía.
+- No agregues Spring Security todavía, salvo que sea estrictamente necesario para compilar. Si lo agregas, deja todo documentado y deshabilitado para desarrollo.
+- No uses datos mock si puedes consultar la base de datos real.
+- Si un endpoint requiere body, crea su Request DTO.
+- Si un endpoint responde datos, crea su Response DTO.
+
+Endpoints técnicos requeridos:
+- GET /api/v1/index
+  - Debe responder que el Portal de Empleados está activo.
+
+- GET /actuator/health
+  - Health check.
+
+- GET /actuator/info
+  - Información de la aplicación.
+
+- GET /actuator/prometheus
+  - Métricas para Prometheus.
+
+- GET /swagger-ui.html
+  - Swagger UI.
+
+- GET /v3/api-docs
+  - OpenAPI JSON.
+
+Endpoints funcionales requeridos:
+
+Usuarios:
+- GET /api/v1/users
+  - Lista usuarios paginados.
+  - No debe incluir password_hash.
+  - Debe permitir filtrar opcionalmente por username, email y enabled.
+
+- GET /api/v1/users/{id}
+  - Consulta usuario por ID.
+  - Debe incluir roles asignados.
+  - No debe incluir password_hash.
+
+- POST /api/v1/users
+  - Crea usuario.
+  - Campos request:
+    - username
+    - email
+    - passwordHash
+    - enabled
+  - Por ahora no cifres contraseña, solo guarda passwordHash tal como llega.
+  - Deja comentario TODO para cifrado futuro.
+
+- PUT /api/v1/users/{id}
+  - Actualiza username, email y enabled.
+  - No actualices password_hash desde este endpoint.
+
+- PATCH /api/v1/users/{id}/status
+  - Activa o desactiva usuario usando enabled.
+
+- GET /api/v1/users/{id}/roles
+  - Lista roles asignados a un usuario.
+
+- PUT /api/v1/users/{id}/roles
+  - Reemplaza roles asignados a un usuario.
+  - Request:
+    - roleIds: lista de IDs.
+
+Roles:
+- GET /api/v1/roles
+  - Lista roles.
+
+- GET /api/v1/roles/{id}
+  - Consulta rol por ID.
+  - Debe incluir permisos asignados.
+
+- POST /api/v1/roles
+  - Crea rol.
+  - Campos:
+    - code
+    - name
+    - description
+
+- PUT /api/v1/roles/{id}
+  - Actualiza rol.
+
+- DELETE /api/v1/roles/{id}
+  - Elimina rol si no tiene usuarios asignados.
+  - Si tiene usuarios asignados, responder error controlado.
+
+- GET /api/v1/roles/{id}/permissions
+  - Lista permisos asignados al rol.
+
+- PUT /api/v1/roles/{id}/permissions
+  - Reemplaza permisos asignados al rol.
+  - Request:
+    - permissionIds: lista de IDs.
+
+Permisos:
+- GET /api/v1/permissions
+  - Lista permisos.
+
+- GET /api/v1/permissions/{id}
+  - Consulta permiso por ID.
+
+- POST /api/v1/permissions
+  - Crea permiso.
+  - Campos:
+    - code
+    - description
+
+- PUT /api/v1/permissions/{id}
+  - Actualiza permiso.
+
+- DELETE /api/v1/permissions/{id}
+  - Elimina permiso si no tiene roles asociados.
+  - Si tiene roles asociados, responder error controlado.
+
+- GET /api/v1/permissions/{id}/menus
+  - Lista menús asociados al permiso.
+
+- PUT /api/v1/permissions/{id}/menus
+  - Reemplaza menús asociados al permiso.
+  - Request:
+    - menuIds: lista de IDs.
+
+Menús:
+- GET /api/v1/menus
+  - Lista todos los menús.
+
+- GET /api/v1/menus/tree
+  - Regresa el árbol jerárquico de menús usando parent_id.
+  - Debe regresar menús padre con sus children.
+  - Debe ordenar por order_index.
+
+- GET /api/v1/menus/{id}
+  - Consulta menú por ID.
+
+- POST /api/v1/menus
+  - Crea menú.
+  - Campos:
+    - code
+    - label
+    - route
+    - icon
+    - parentId
+    - orderIndex
+
+- PUT /api/v1/menus/{id}
+  - Actualiza menú.
+
+- DELETE /api/v1/menus/{id}
+  - Elimina menú si no tiene children y si no está asociado a permisos.
+  - Si tiene children o permisos asociados, responder error controlado.
+
+- GET /api/v1/users/{id}/menus
+  - Obtiene el árbol de menús permitido para un usuario.
+  - Debe calcularlo usando:
+    - user_roles
+    - role_permissions
+    - permission_menu
+    - menus
+  - Debe regresar solo los menús asociados a los permisos de los roles del usuario.
+  - Debe regresar estructura jerárquica.
+  - Debe ordenar por order_index.
+
+Endpoint de contexto del usuario:
+- GET /api/v1/users/{id}/access-context
+  - Debe regresar:
+    - información básica del usuario
+    - roles asignados
+    - permisos consolidados
+    - árbol de menús permitido
+  - No debe incluir password_hash.
+
+DTOs mínimos requeridos:
+
+UserRequest:
+- username
+- email
+- passwordHash
+- enabled
+
+UserUpdateRequest:
+- username
+- email
+- enabled
+
+UserResponse:
+- id
+- username
+- email
+- enabled
+- createdAt
+- updatedAt
+- roles
+
+RoleRequest:
+- code
+- name
+- description
+
+RoleResponse:
+- id
+- code
+- name
+- description
+- createdAt
+
+PermissionRequest:
+- code
+- description
+
+PermissionResponse:
+- id
+- code
+- description
+- createdAt
+
+MenuRequest:
+- code
+- label
+- route
+- icon
+- parentId
+- orderIndex
+
+MenuResponse:
+- id
+- code
+- label
+- route
+- icon
+- parentId
+- orderIndex
+- children
+
+AssignRolesRequest:
+- roleIds
+
+AssignPermissionsRequest:
+- permissionIds
+
+AssignMenusRequest:
+- menuIds
+
+UserAccessContextResponse:
+- user
+- roles
+- permissions
+- menus
+
+Configuración Swagger/OpenAPI:
+- Crea config/OpenApiConfig.java.
+- Título: Employee Portal API
+- Descripción: API backend del Portal de Empleados.
+- Versión: v1
+- Documenta todos los controllers con:
+  - @Tag
+  - @Operation
+  - @ApiResponses cuando aplique
+
+Configuración Actuator y Prometheus:
+- Expón:
+  - health
+  - info
+  - prometheus
+  - metrics
+- Configura Prometheus con micrometer-registry-prometheus.
+- El endpoint de Prometheus debe quedar disponible en:
+  - /actuator/prometheus
+
+Configuración YAML por ambientes:
+Elimina application.properties si existe.
+Crea estos archivos:
+
+src/main/resources/application.yml
+Debe contener:
+- spring.application.name=employee-portal
+- spring.profiles.active=dev
+- server.servlet.context-path=/employee-portal
+- configuración común de JPA
+- configuración común de actuator
+- configuración común de swagger
+
+src/main/resources/application-dev.yml
+Debe contener:
+- server.port=8083
+- datasource MySQL para ambiente dev
+- url usando base iam
+- usuario placeholder
+- password placeholder
+- logging DEBUG para el paquete base:
+  com.rassini.employeeportal
+
+src/main/resources/application-qa.yml
+Debe contener:
+- server.port=8084
+- datasource MySQL para ambiente qa
+- url usando base iam
+- usuario placeholder
+- password placeholder
+- logging INFO para el paquete base
+
+src/main/resources/application-prod.yml
+Debe contener:
+- server.port=8080
+- datasource MySQL para ambiente prod
+- url usando base iam
+- usuario placeholder
+- password placeholder
+- logging INFO para el paquete base
+- actuator health con detalles limitados
+
+Usa placeholders claros para datasource:
+- jdbc:mysql://localhost:3306/iam?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+- username: REPLACE_WITH_USER
+- password: REPLACE_WITH_PASSWORD
+
+No hardcodees credenciales reales.
+
+Configuración VS Code / Antigravity:
+Crea el archivo:
+.vscode/launch.json
+
+Debe incluir configuraciones para ejecutar por ambiente:
+
+- Employee Portal DEV
+  - profile activo: dev
+  - puerto esperado: 8083
+
+- Employee Portal QA
+  - profile activo: qa
+  - puerto esperado: 8084
+
+- Employee Portal PROD
+  - profile activo: prod
+  - puerto esperado: 8080
+
+Cada configuración debe ejecutar la clase main del proyecto y pasar:
+- --spring.profiles.active=dev
+- --spring.profiles.active=qa
+- --spring.profiles.active=prod
+
+También crea .vscode/settings.json si es necesario para Java 21.
+
+Excepciones:
+Crea estas clases:
+- ResourceNotFoundException
+- BusinessException
+- ApiErrorResponse
+- GlobalExceptionHandler
+
+El GlobalExceptionHandler debe manejar:
+- ResourceNotFoundException con HTTP 404
+- BusinessException con HTTP 400
+- MethodArgumentNotValidException con HTTP 400
+- Exception genérica con HTTP 500
+
+Repositories:
+Crea repositories JPA:
+- UserRepository
+- RoleRepository
+- PermissionRepository
+- MenuRepository
+
+Consultas requeridas:
+En UserRepository:
+- buscar por username
+- buscar por email
+- filtrar usuarios por username, email y enabled cuando existan parámetros
+
+En MenuRepository:
+- buscar menús raíz donde parent_id es null
+- buscar menús por lista de IDs
+- buscar árbol o componentes necesarios para construir árbol por usuario
+
+En RoleRepository:
+- buscar por code
+
+En PermissionRepository:
+- buscar por code
+
+Services requeridos:
+- UserService
+- RoleService
+- PermissionService
+- MenuService
+- AccessContextService
+
+Implementaciones:
+- UserServiceImpl
+- RoleServiceImpl
+- PermissionServiceImpl
+- MenuServiceImpl
+- AccessContextServiceImpl
+
+Reglas importantes del AccessContextService:
+- Debe recibir un userId.
+- Debe obtener el usuario.
+- Debe obtener roles del usuario.
+- Debe consolidar permisos sin duplicados.
+- Debe consolidar menús sin duplicados.
+- Debe construir el árbol de menús respetando parent_id.
+- Debe ordenar por order_index.
+- Debe regresar UserAccessContextResponse.
+
+Reglas para árbol de menú:
+- Si un menú hijo está permitido pero su padre no viene incluido, incluye el padre como contenedor si existe.
+- Evita duplicados por id.
+- Ordena cada nivel por order_index.
+- Evita ciclos defensivamente.
+
+Pruebas:
+Crea pruebas básicas con JUnit para:
+- IndexController
+- UserServiceImpl
+- RoleServiceImpl
+- PermissionServiceImpl
+- MenuServiceImpl
+- AccessContextServiceImpl
+
+No es necesario conectar a base real en pruebas.
+Usa mocks con Mockito cuando aplique.
+
+Documentación:
+Crea o actualiza README.md con:
+- Descripción del proyecto
+- Tecnologías usadas
+- Cómo ejecutar en dev
+- Cómo ejecutar en qa
+- Cómo ejecutar en prod
+- URLs útiles:
+  - health
+  - prometheus
+  - swagger-ui
+  - api-docs
+- Cómo configurar MySQL
+- Nombre del esquema: iam
+- Lista de tablas usadas
+
+Crea AGENTS.md con:
+- Descripción del proyecto
+- Arquitectura
+- Reglas para agentes
+- Convenciones de código
+- Reglas para no exponer password_hash
+- Reglas para no cambiar ddl-auto a create/update
+- Reglas para no inventar tablas sin instrucción
+
+Crea PLAN.md con:
+- Fase 1: generación base del backend
+- Fase 2: conexión con MySQL
+- Fase 3: endpoints de seguridad y menú
+- Fase 4: integración con autenticación real
+- Fase 5: integración con frontend
+- Fase 6: observabilidad con Prometheus/Grafana
+
+Validación final:
+- Ejecuta Maven test:
+  - ./mvnw test
+  - o .\mvnw.cmd test en Windows
+- Si hay errores de compilación, corrígelos.
+- Verifica que el proyecto compile.
+- Verifica que Swagger esté configurado.
+- Verifica que actuator exponga prometheus.
+- Verifica que los YAML existan.
+- Verifica que launch.json exista.
+- Verifica que no se exponga password_hash en ningún response.
+- Verifica que ddl-auto esté en none.
+- Verifica que el contexto sea /employee-portal.
+
+Restricciones estrictas:
+- Genera clases completas no resumenes ni a medias 
+- No pospongas la creación de entidades, repositories, services, controllers, DTOs ni configuración.
+- No generes solo placeholders vacíos.
+- No cambies los nombres de tablas.
+- No cambies los nombres de columnas.
+- No uses H2.
+- No uses PostgreSQL.
+- No uses MongoDB.
+- No agregues autenticación JWT todavía.
+- No agregues Spring Security todavía.
+- No expongas password_hash.
+- No uses ddl-auto=create.
+- No uses ddl-auto=update.
+- No inventes tablas nuevas.
+- Si necesitas una tabla que no existe, deja un TODO y no la generes.
+- Si falta una FK explícita en el DDL, mapea la relación con @JoinTable o @JoinColumn basado en los nombres existentes.
+- El código debe compilar al finalizar.

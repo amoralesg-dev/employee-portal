@@ -1,0 +1,48 @@
+spring:
+  application:
+    name: employee-portal
+  profiles:
+    active: dev
+
+  # JPA / Hibernate (común)
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        physical_naming_strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
+    open-in-view: false
+
+server:
+  servlet:
+    context-path: /employee-portal
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  info:
+    env:
+      enabled: true
+
+# Springdoc / Swagger
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+
+# Info del proyecto
+info:
+  app:
+    name: Employee Portal
+    description: API backend del Portal de Empleados
+    version: 1.0.0
