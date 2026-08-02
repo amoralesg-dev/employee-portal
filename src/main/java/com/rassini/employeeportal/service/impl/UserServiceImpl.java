@@ -35,6 +35,7 @@ public class UserServiceImpl implements UserService {
     private final RoleRepository roleRepository;
     private final UserMapper userMapper;
     private final RoleMapper roleMapper;
+    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional(readOnly = true)
@@ -124,6 +125,29 @@ public class UserServiceImpl implements UserService {
 
         UserEntity saved = userRepository.save(user);
         return userMapper.toResponse(saved);
+    }
+
+    @Override
+    public com.rassini.employeeportal.dto.response.SimpleMessageResponse changePassword(Long id, com.rassini.employeeportal.dto.request.ChangePasswordRequest request) {
+        UserEntity user = findUserOrThrow(id);
+
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new BusinessException("La nueva contraseña y la confirmación no coinciden");
+        }
+
+        if (passwordEncoder.matches(request.getNewPassword(), user.getPasswordHash())) {
+            throw new BusinessException("La nueva contraseña no puede ser igual a la actual");
+        }
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {
+            throw new BusinessException("La contraseña actual es incorrecta");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        user.setUpdatedAt(LocalDateTime.now());
+        userRepository.save(user);
+
+        return new com.rassini.employeeportal.dto.response.SimpleMessageResponse(200, "Contraseña actualizada exitosamente");
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────

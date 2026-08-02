@@ -27,4 +27,6 @@ public interface UserService {
     List<RoleResponse> getUserRoles(Long id);
 
     UserResponse replaceUserRoles(Long id, Set<Long> roleIds);
+
+    com.rassini.employeeportal.dto.response.SimpleMessageResponse changePassword(Long id, com.rassini.employeeportal.dto.request.ChangePasswordRequest request);
 }

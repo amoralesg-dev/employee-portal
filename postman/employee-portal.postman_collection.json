@@ -1,0 +1,1509 @@
+{
+	"info": {
+		"_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+		"name": "Employee Portal API",
+		"description": "Colección completa de la API del Portal de Empleados - Rassini.\n\nBase URL: http://localhost:8083/employee-portal\n\nEsquema IAM: users, roles, permissions, menus.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8083/employee-portal",
+			"type": "string"
+		},
+		{
+			"key": "userId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "roleId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "permissionId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "menuId",
+			"value": "1",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Health",
+			"description": "Endpoints de monitoreo y salud de la aplicación (Spring Boot Actuator).",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/actuator/health",
+							"host": ["{{baseUrl}}"],
+							"path": ["actuator", "health"]
+						},
+						"description": "Verifica el estado de salud de la aplicación."
+					},
+					"response": [
+						{
+							"name": "Health Check - 200 OK",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/actuator/health",
+									"host": ["{{baseUrl}}"],
+									"path": ["actuator", "health"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json" }
+							],
+							"body": "{\n  \"status\": \"UP\",\n  \"components\": {\n    \"db\": {\n      \"status\": \"UP\",\n      \"details\": {\n        \"database\": \"MySQL\",\n        \"validationQuery\": \"isValid()\"\n      }\n    },\n    \"diskSpace\": {\n      \"status\": \"UP\"\n    },\n    \"ping\": {\n      \"status\": \"UP\"\n    }\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "Info",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/actuator/info",
+							"host": ["{{baseUrl}}"],
+							"path": ["actuator", "info"]
+						},
+						"description": "Retorna información general de la aplicación."
+					},
+					"response": [
+						{
+							"name": "Info - 200 OK",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/actuator/info",
+									"host": ["{{baseUrl}}"],
+									"path": ["actuator", "info"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json" }
+							],
+							"body": "{}"
+						}
+					]
+				},
+				{
+					"name": "Prometheus Metrics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/actuator/prometheus",
+							"host": ["{{baseUrl}}"],
+							"path": ["actuator", "prometheus"]
+						},
+						"description": "Expone métricas en formato Prometheus para scraping."
+					},
+					"response": [
+						{
+							"name": "Prometheus - 200 OK",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/actuator/prometheus",
+									"host": ["{{baseUrl}}"],
+									"path": ["actuator", "prometheus"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "text",
+							"header": [
+								{ "key": "Content-Type", "value": "text/plain; version=0.0.4" }
+							],
+							"body": "# HELP jvm_memory_used_bytes The amount of used memory\n# TYPE jvm_memory_used_bytes gauge\njvm_memory_used_bytes{area=\"heap\",id=\"G1 Eden Space\"} 1.048576E7"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Users",
+			"description": "Gestión de usuarios: CRUD, estado, roles, menús y contexto de acceso.",
+			"item": [
+				{
+					"name": "Listar usuarios",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/users",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "users"]
+						},
+						"description": "Retorna todos los usuarios registrados."
+					},
+					"response": [
+						{
+							"name": "Listar usuarios - 200 OK",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/users",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "users"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json" }
+							],
+							"body": "{\n  \"status\": 200,\n  \"message\": \"Usuarios obtenidos exitosamente\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"username\": \"admin\",\n      \"email\": \"admin@rassini.com\",\n      \"enabled\": true,\n      \"createdAt\": \"2026-07-31T10:00:00\",\n      \"updatedAt\": \"2026-07-31T10:00:00\",\n      \"roles\": [\n        {\n          \"id\": 1,\n          \"code\": \"ADMIN\",\n          \"name\": \"Administrador\",\n          \"description\": \"Rol administrador\",\n          \"createdAt\": \"2026-07-31T10:00:00\"\n        }\n      ]\n    }\n  ],\n  \"timestamp\": \"2026-07-31T10:00:00\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Obtener usuario por ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/users/{{userId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "users", "{{userId}}"]
+						},
+						"description": "Retorna un usuario específico por su ID."
+					},
+					"response": [
+						{
+							"name": "Usuario encontrado - 200 OK",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/users/{{userId}}",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "users", "{{userId}}"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json" }
+							],
+							"body": "{\n  \"status\": 200,\n  \"message\": \"Usuario obtenido exitosamente\",\n  \"data\": {\n    \"id\": 1,\n    \"username\": \"admin\",\n    \"email\": \"admin@rassini.com\",\n    \"enabled\": true,\n    \"createdAt\": \"2026-07-31T10:00:00\",\n    \"updatedAt\": \"2026-07-31T10:00:00\",\n    \"roles\": []\n  },\n  \"timestamp\": \"2026-07-31T10:00:00\"\n}"
+						},
+						{
+							"name": "Usuario no encontrado - 404",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/users/999",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "users", "999"]
+								}
+							},
+							"status": "Not Found",
+							"code": 404,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json" }
+							],
+							"body": "{\n  \"status\": 404,\n  \"message\": \"Usuario no encontrado con id: '999'\",\n  \"timestamp\": \"2026-07-31T10:00:00\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Crear usuario",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"admin\",\n  \"email\": \"admin@rassini.com\",\n  \"password\": \"Admin123!\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/users",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "users"]
+						},
+						"description": "Crea un nuevo usuario. El password se almacena como hash."
+					},
+					"response": [
+						{
+							"name": "Usuario creado - 201 Created",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{ "key": "Content-Type", "value": "application/json" }
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"username\": \"admin\",\n  \"email\": \"admin@rassini.com\",\n  \"password\": \"Admin123!\"\n}",
+									"options": { "raw": { "language": "json" } }
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/users",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "users"]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json" }
+							],
+							"body": "{\n  \"status\": 201,\n  \"message\": \"Usuario creado exitosamente\",\n  \"data\": {\n    \"id\": 1,\n    \"username\": \"admin\",\n    \"email\": \"admin@rassini.com\",\n    \"enabled\": true,\n    \"createdAt\": \"2026-07-31T10:00:00\",\n    \"updatedAt\": \"2026-07-31T10:00:00\",\n    \"roles\": []\n  },\n  \"timestamp\": \"2026-07-31T10:00:00\"\n}"
+						},
+						{
+							"name": "Validación fallida - 400",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{ "key": "Content-Type", "value": "application/json" }
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"username\": \"\",\n  \"email\": \"invalid\",\n  \"password\": \"123\"\n}",
+									"options": { "raw": { "language": "json" } }
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/users",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "users"]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json" }
+							],
+							"body": "{\n  \"status\": 400,\n  \"message\": \"Error de validación\",\n  \"timestamp\": \"2026-07-31T10:00:00\",\n  \"errors\": [\n    {\n      \"field\": \"username\",\n      \"message\": \"El nombre de usuario es obligatorio\"\n    },\n    {\n      \"field\": \"email\",\n      \"message\": \"El formato del email no es válido\"\n    },\n    {\n      \"field\": \"password\",\n      \"message\": \"La contraseña debe tener entre 8 y 255 caracteres\"\n    }\n  ]\n}"
+						}
+					]
+				},
+				{
+					"name": "Actualizar usuario",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"admin_updated\",\n  \"email\": \"admin.updated@rassini.com\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/users/{{userId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "users", "{{userId}}"]
+						},
+						"description": "Actualiza username y/o email de un usuario existente."
+					},
+					"response": [
+						{
+							"name": "Usuario actualizado - 200 OK",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{ "key": "Content-Type", "value": "application/json" }
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"username\": \"admin_updated\",\n  \"email\": \"admin.updated@rassini.com\"\n}",
+									"options": { "raw": { "language": "json" } }
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/users/{{userId}}",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "users", "{{userId}}"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json" }
+							],
+							"body": "{\n  \"status\": 200,\n  \"message\": \"Usuario actualizado exitosamente\",\n  \"data\": {\n    \"id\": 1,\n    \"username\": \"admin_updated\",\n    \"email\": \"admin.updated@rassini.com\",\n    \"enabled\": true,\n    \"createdAt\": \"2026-07-31T10:00:00\",\n    \"updatedAt\": \"2026-07-31T11:00:00\",\n    \"roles\": []\n  },\n  \"timestamp\": \"2026-07-31T11:00:00\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Actualizar estado de usuario",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"enabled\": false\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/users/{{userId}}/status",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "users", "{{userId}}", "status"]
+						},
+						"description": "Activa o desactiva un usuario."
+					},
+					"response": [
+						{
+							"name": "Estado actualizado - 200 OK",
+							"originalRequest": {
+								"method": "PATCH",
+								"header": [
+									{ "key": "Content-Type", "value": "application/json" }
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"enabled\": false\n}",
+									"options": { "raw": { "language": "json" } }
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/users/{{userId}}/status",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "users", "{{userId}}", "status"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json" }
+							],
+							"body": "{\n  \"status\": 200,\n  \"message\": \"Estado del usuario actualizado exitosamente\",\n  \"data\": {\n    \"id\": 1,\n    \"username\": \"admin\",\n    \"email\": \"admin@rassini.com\",\n    \"enabled\": false,\n    \"createdAt\": \"2026-07-31T10:00:00\",\n    \"updatedAt\": \"2026-07-31T11:00:00\",\n    \"roles\": []\n  },\n  \"timestamp\": \"2026-07-31T11:00:00\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Obtener roles del usuario",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/users/{{userId}}/roles",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "users", "{{userId}}", "roles"]
+						},
+						"description": "Retorna los roles asignados a un usuario."
+					},
+					"response": [
+						{
+							"name": "Roles del usuario - 200 OK",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/users/{{userId}}/roles",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "users", "{{userId}}", "roles"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json" }
+							],
+							"body": "{\n  \"status\": 200,\n  \"message\": \"Roles del usuario obtenidos exitosamente\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"code\": \"ADMIN\",\n      \"name\": \"Administrador\",\n      \"description\": \"Rol administrador\",\n      \"createdAt\": \"2026-07-31T10:00:00\"\n    }\n  ],\n  \"timestamp\": \"2026-07-31T10:00:00\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Reemplazar roles del usuario",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"roleIds\": [1]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/users/{{userId}}/roles",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "users", "{{userId}}", "roles"]
+						},
+						"description": "Reemplaza todos los roles asignados al usuario."
+					},
+					"response": [
+						{
+							"name": "Roles reemplazados - 200 OK",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{ "key": "Content-Type", "value": "application/json" }
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"roleIds\": [1]\n}",
+									"options": { "raw": { "language": "json" } }
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/users/{{userId}}/roles",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "users", "{{userId}}", "roles"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json" }
+							],
+							"body": "{\n  \"status\": 200,\n  \"message\": \"Roles del usuario actualizados exitosamente\",\n  \"data\": {\n    \"id\": 1,\n    \"username\": \"admin\",\n    \"email\": \"admin@rassini.com\",\n    \"enabled\": true,\n    \"createdAt\": \"2026-07-31T10:00:00\",\n    \"updatedAt\": \"2026-07-31T11:00:00\",\n    \"roles\": [\n      {\n        \"id\": 1,\n        \"code\": \"ADMIN\",\n        \"name\": \"Administrador\",\n        \"description\": \"Rol administrador\",\n        \"createdAt\": \"2026-07-31T10:00:00\"\n      }\n    ]\n  },\n  \"timestamp\": \"2026-07-31T11:00:00\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Obtener menús del usuario",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/users/{{userId}}/menus",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "users", "{{userId}}", "menus"]
+						},
+						"description": "Retorna el árbol de menús autorizados para el usuario a través de sus roles y permisos."
+					},
+					"response": [
+						{
+							"name": "Menús del usuario - 200 OK",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/users/{{userId}}/menus",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "users", "{{userId}}", "menus"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json" }
+							],
+							"body": "{\n  \"status\": 200,\n  \"message\": \"Menús del usuario obtenidos exitosamente\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"code\": \"DASHBOARD\",\n      \"label\": \"Dashboard\",\n      \"route\": \"/dashboard\",\n      \"icon\": \"home\",\n      \"orderIndex\": 1,\n      \"parentId\": null,\n      \"children\": []\n    }\n  ],\n  \"timestamp\": \"2026-07-31T10:00:00\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Obtener contexto de acceso",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/users/{{userId}}/access-context",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "users", "{{userId}}", "access-context"]
+						},
+						"description": "Retorna roles, permisos y menús consolidados del usuario en una sola llamada."
+					},
+					"response": [
+						{
+							"name": "Contexto de acceso - 200 OK",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/users/{{userId}}/access-context",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "users", "{{userId}}", "access-context"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json" }
+							],
+							"body": "{\n  \"status\": 200,\n  \"message\": \"Contexto de acceso obtenido exitosamente\",\n  \"data\": {\n    \"userId\": 1,\n    \"username\": \"admin\",\n    \"roles\": [\"ADMIN\"],\n    \"permissions\": [\"USER_VIEW\", \"USER_EDIT\"],\n    \"menus\": [\n      {\n        \"id\": 1,\n        \"code\": \"DASHBOARD\",\n        \"label\": \"Dashboard\",\n        \"route\": \"/dashboard\",\n        \"icon\": \"home\",\n        \"orderIndex\": 1,\n        \"parentId\": null,\n        \"children\": [\n          {\n            \"id\": 2,\n            \"code\": \"DASHBOARD_STATS\",\n            \"label\": \"Estadísticas\",\n            \"route\": \"/dashboard/stats\",\n            \"icon\": \"bar_chart\",\n            \"orderIndex\": 1,\n            \"parentId\": 1,\n            \"children\": []\n          }\n        ]\n      }\n    ]\n  },\n  \"timestamp\": \"2026-07-31T10:00:00\"\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Roles",
+			"description": "Gestión de roles: CRUD y asignación de permisos.",
+			"item": [
+				{
+					"name": "Listar roles",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/roles",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "roles"]
+						},
+						"description": "Retorna todos los roles registrados."
+					},
+					"response": [
+						{
+							"name": "Listar roles - 200 OK",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/roles",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "roles"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json" }
+							],
+							"body": "{\n  \"status\": 200,\n  \"message\": \"Roles obtenidos exitosamente\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"code\": \"ADMIN\",\n      \"name\": \"Administrador\",\n      \"description\": \"Rol administrador\",\n      \"createdAt\": \"2026-07-31T10:00:00\",\n      \"permissions\": [\n        {\n          \"id\": 1,\n          \"code\": \"USER_VIEW\",\n          \"description\": \"Permite consultar usuarios\",\n          \"createdAt\": \"2026-07-31T10:00:00\"\n        }\n      ]\n    }\n  ],\n  \"timestamp\": \"2026-07-31T10:00:00\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Obtener rol por ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/roles/{{roleId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "roles", "{{roleId}}"]
+						},
+						"description": "Retorna un rol específico por su ID."
+					},
+					"response": [
+						{
+							"name": "Rol encontrado - 200 OK",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/roles/{{roleId}}",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "roles", "{{roleId}}"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json" }
+							],
+							"body": "{\n  \"status\": 200,\n  \"message\": \"Rol obtenido exitosamente\",\n  \"data\": {\n    \"id\": 1,\n    \"code\": \"ADMIN\",\n    \"name\": \"Administrador\",\n    \"description\": \"Rol administrador\",\n    \"createdAt\": \"2026-07-31T10:00:00\",\n    \"permissions\": []\n  },\n  \"timestamp\": \"2026-07-31T10:00:00\"\n}"
+						},
+						{
+							"name": "Rol no encontrado - 404",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/roles/999",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "roles", "999"]
+								}
+							},
+							"status": "Not Found",
+							"code": 404,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json" }
+							],
+							"body": "{\n  \"status\": 404,\n  \"message\": \"Rol no encontrado con id: '999'\",\n  \"timestamp\": \"2026-07-31T10:00:00\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Crear rol",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"code\": \"ADMIN\",\n  \"name\": \"Administrador\",\n  \"description\": \"Rol administrador\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/roles",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "roles"]
+						},
+						"description": "Crea un nuevo rol en el sistema."
+					},
+					"response": [
+						{
+							"name": "Rol creado - 201 Created",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{ "key": "Content-Type", "value": "application/json" }
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"code\": \"ADMIN\",\n  \"name\": \"Administrador\",\n  \"description\": \"Rol administrador\"\n}",
+									"options": { "raw": { "language": "json" } }
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/roles",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "roles"]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json" }
+							],
+							"body": "{\n  \"status\": 201,\n  \"message\": \"Rol creado exitosamente\",\n  \"data\": {\n    \"id\": 1,\n    \"code\": \"ADMIN\",\n    \"name\": \"Administrador\",\n    \"description\": \"Rol administrador\",\n    \"createdAt\": \"2026-07-31T10:00:00\",\n    \"permissions\": []\n  },\n  \"timestamp\": \"2026-07-31T10:00:00\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Actualizar rol",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"code\": \"ADMIN\",\n  \"name\": \"Administrador General\",\n  \"description\": \"Rol administrador con acceso total\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/roles/{{roleId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "roles", "{{roleId}}"]
+						},
+						"description": "Actualiza un rol existente."
+					},
+					"response": [
+						{
+							"name": "Rol actualizado - 200 OK",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{ "key": "Content-Type", "value": "application/json" }
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"code\": \"ADMIN\",\n  \"name\": \"Administrador General\",\n  \"description\": \"Rol administrador con acceso total\"\n}",
+									"options": { "raw": { "language": "json" } }
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/roles/{{roleId}}",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "roles", "{{roleId}}"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json" }
+							],
+							"body": "{\n  \"status\": 200,\n  \"message\": \"Rol actualizado exitosamente\",\n  \"data\": {\n    \"id\": 1,\n    \"code\": \"ADMIN\",\n    \"name\": \"Administrador General\",\n    \"description\": \"Rol administrador con acceso total\",\n    \"createdAt\": \"2026-07-31T10:00:00\",\n    \"permissions\": []\n  },\n  \"timestamp\": \"2026-07-31T11:00:00\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Eliminar rol",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/roles/{{roleId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "roles", "{{roleId}}"]
+						},
+						"description": "Elimina un rol del sistema."
+					},
+					"response": [
+						{
+							"name": "Rol eliminado - 200 OK",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/roles/{{roleId}}",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "roles", "{{roleId}}"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json" }
+							],
+							"body": "{\n  \"status\": 200,\n  \"message\": \"Rol eliminado exitosamente\",\n  \"timestamp\": \"2026-07-31T10:00:00\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Obtener permisos del rol",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/roles/{{roleId}}/permissions",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "roles", "{{roleId}}", "permissions"]
+						},
+						"description": "Retorna los permisos asignados a un rol."
+					},
+					"response": [
+						{
+							"name": "Permisos del rol - 200 OK",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/roles/{{roleId}}/permissions",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "roles", "{{roleId}}", "permissions"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json" }
+							],
+							"body": "{\n  \"status\": 200,\n  \"message\": \"Permisos del rol obtenidos exitosamente\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"code\": \"USER_VIEW\",\n      \"description\": \"Permite consultar usuarios\",\n      \"createdAt\": \"2026-07-31T10:00:00\"\n    }\n  ],\n  \"timestamp\": \"2026-07-31T10:00:00\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Reemplazar permisos del rol",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"permissionIds\": [1]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/roles/{{roleId}}/permissions",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "roles", "{{roleId}}", "permissions"]
+						},
+						"description": "Reemplaza todos los permisos asignados al rol."
+					},
+					"response": [
+						{
+							"name": "Permisos reemplazados - 200 OK",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{ "key": "Content-Type", "value": "application/json" }
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"permissionIds\": [1]\n}",
+									"options": { "raw": { "language": "json" } }
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/roles/{{roleId}}/permissions",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "roles", "{{roleId}}", "permissions"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json" }
+							],
+							"body": "{\n  \"status\": 200,\n  \"message\": \"Permisos del rol actualizados exitosamente\",\n  \"data\": {\n    \"id\": 1,\n    \"code\": \"ADMIN\",\n    \"name\": \"Administrador\",\n    \"description\": \"Rol administrador\",\n    \"createdAt\": \"2026-07-31T10:00:00\",\n    \"permissions\": [\n      {\n        \"id\": 1,\n        \"code\": \"USER_VIEW\",\n        \"description\": \"Permite consultar usuarios\",\n        \"createdAt\": \"2026-07-31T10:00:00\"\n      }\n    ]\n  },\n  \"timestamp\": \"2026-07-31T11:00:00\"\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Permissions",
+			"description": "Gestión de permisos: CRUD y asignación de menús.",
+			"item": [
+				{
+					"name": "Listar permisos",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/permissions",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "permissions"]
+						},
+						"description": "Retorna todos los permisos registrados."
+					},
+					"response": [
+						{
+							"name": "Listar permisos - 200 OK",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/permissions",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "permissions"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json" }
+							],
+							"body": "{\n  \"status\": 200,\n  \"message\": \"Permisos obtenidos exitosamente\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"code\": \"USER_VIEW\",\n      \"description\": \"Permite consultar usuarios\",\n      \"createdAt\": \"2026-07-31T10:00:00\",\n      \"menus\": [\n        {\n          \"id\": 1,\n          \"code\": \"DASHBOARD\",\n          \"label\": \"Dashboard\",\n          \"route\": \"/dashboard\",\n          \"icon\": \"home\",\n          \"orderIndex\": 1,\n          \"parentId\": null\n        }\n      ]\n    }\n  ],\n  \"timestamp\": \"2026-07-31T10:00:00\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Obtener permiso por ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/permissions/{{permissionId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "permissions", "{{permissionId}}"]
+						},
+						"description": "Retorna un permiso específico por su ID."
+					},
+					"response": [
+						{
+							"name": "Permiso encontrado - 200 OK",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/permissions/{{permissionId}}",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "permissions", "{{permissionId}}"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json" }
+							],
+							"body": "{\n  \"status\": 200,\n  \"message\": \"Permiso obtenido exitosamente\",\n  \"data\": {\n    \"id\": 1,\n    \"code\": \"USER_VIEW\",\n    \"description\": \"Permite consultar usuarios\",\n    \"createdAt\": \"2026-07-31T10:00:00\",\n    \"menus\": []\n  },\n  \"timestamp\": \"2026-07-31T10:00:00\"\n}"
+						},
+						{
+							"name": "Permiso no encontrado - 404",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/permissions/999",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "permissions", "999"]
+								}
+							},
+							"status": "Not Found",
+							"code": 404,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json" }
+							],
+							"body": "{\n  \"status\": 404,\n  \"message\": \"Permiso no encontrado con id: '999'\",\n  \"timestamp\": \"2026-07-31T10:00:00\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Crear permiso",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"code\": \"USER_VIEW\",\n  \"description\": \"Permite consultar usuarios\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/permissions",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "permissions"]
+						},
+						"description": "Crea un nuevo permiso en el sistema."
+					},
+					"response": [
+						{
+							"name": "Permiso creado - 201 Created",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{ "key": "Content-Type", "value": "application/json" }
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"code\": \"USER_VIEW\",\n  \"description\": \"Permite consultar usuarios\"\n}",
+									"options": { "raw": { "language": "json" } }
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/permissions",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "permissions"]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json" }
+							],
+							"body": "{\n  \"status\": 201,\n  \"message\": \"Permiso creado exitosamente\",\n  \"data\": {\n    \"id\": 1,\n    \"code\": \"USER_VIEW\",\n    \"description\": \"Permite consultar usuarios\",\n    \"createdAt\": \"2026-07-31T10:00:00\",\n    \"menus\": []\n  },\n  \"timestamp\": \"2026-07-31T10:00:00\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Actualizar permiso",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"code\": \"USER_VIEW\",\n  \"description\": \"Permite consultar y listar usuarios del sistema\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/permissions/{{permissionId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "permissions", "{{permissionId}}"]
+						},
+						"description": "Actualiza un permiso existente."
+					},
+					"response": [
+						{
+							"name": "Permiso actualizado - 200 OK",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{ "key": "Content-Type", "value": "application/json" }
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"code\": \"USER_VIEW\",\n  \"description\": \"Permite consultar y listar usuarios del sistema\"\n}",
+									"options": { "raw": { "language": "json" } }
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/permissions/{{permissionId}}",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "permissions", "{{permissionId}}"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json" }
+							],
+							"body": "{\n  \"status\": 200,\n  \"message\": \"Permiso actualizado exitosamente\",\n  \"data\": {\n    \"id\": 1,\n    \"code\": \"USER_VIEW\",\n    \"description\": \"Permite consultar y listar usuarios del sistema\",\n    \"createdAt\": \"2026-07-31T10:00:00\",\n    \"menus\": []\n  },\n  \"timestamp\": \"2026-07-31T11:00:00\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Eliminar permiso",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/permissions/{{permissionId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "permissions", "{{permissionId}}"]
+						},
+						"description": "Elimina un permiso del sistema."
+					},
+					"response": [
+						{
+							"name": "Permiso eliminado - 200 OK",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/permissions/{{permissionId}}",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "permissions", "{{permissionId}}"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json" }
+							],
+							"body": "{\n  \"status\": 200,\n  \"message\": \"Permiso eliminado exitosamente\",\n  \"timestamp\": \"2026-07-31T10:00:00\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Obtener menús del permiso",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/permissions/{{permissionId}}/menus",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "permissions", "{{permissionId}}", "menus"]
+						},
+						"description": "Retorna los menús asignados a un permiso."
+					},
+					"response": [
+						{
+							"name": "Menús del permiso - 200 OK",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/permissions/{{permissionId}}/menus",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "permissions", "{{permissionId}}", "menus"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json" }
+							],
+							"body": "{\n  \"status\": 200,\n  \"message\": \"Menús del permiso obtenidos exitosamente\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"code\": \"DASHBOARD\",\n      \"label\": \"Dashboard\",\n      \"route\": \"/dashboard\",\n      \"icon\": \"home\",\n      \"orderIndex\": 1,\n      \"parentId\": null\n    }\n  ],\n  \"timestamp\": \"2026-07-31T10:00:00\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Reemplazar menús del permiso",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"menuIds\": [1]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/permissions/{{permissionId}}/menus",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "permissions", "{{permissionId}}", "menus"]
+						},
+						"description": "Reemplaza todos los menús asignados al permiso."
+					},
+					"response": [
+						{
+							"name": "Menús reemplazados - 200 OK",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{ "key": "Content-Type", "value": "application/json" }
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"menuIds\": [1]\n}",
+									"options": { "raw": { "language": "json" } }
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/permissions/{{permissionId}}/menus",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "permissions", "{{permissionId}}", "menus"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json" }
+							],
+							"body": "{\n  \"status\": 200,\n  \"message\": \"Menús del permiso actualizados exitosamente\",\n  \"data\": {\n    \"id\": 1,\n    \"code\": \"USER_VIEW\",\n    \"description\": \"Permite consultar usuarios\",\n    \"createdAt\": \"2026-07-31T10:00:00\",\n    \"menus\": [\n      {\n        \"id\": 1,\n        \"code\": \"DASHBOARD\",\n        \"label\": \"Dashboard\",\n        \"route\": \"/dashboard\",\n        \"icon\": \"home\",\n        \"orderIndex\": 1,\n        \"parentId\": null\n      }\n    ]\n  },\n  \"timestamp\": \"2026-07-31T11:00:00\"\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Menus",
+			"description": "Gestión de menús: CRUD y consulta de árbol jerárquico.",
+			"item": [
+				{
+					"name": "Listar menús",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/menus",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "menus"]
+						},
+						"description": "Retorna todos los menús registrados (lista plana)."
+					},
+					"response": [
+						{
+							"name": "Listar menús - 200 OK",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/menus",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "menus"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json" }
+							],
+							"body": "{\n  \"status\": 200,\n  \"message\": \"Menús obtenidos exitosamente\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"code\": \"DASHBOARD\",\n      \"label\": \"Dashboard\",\n      \"route\": \"/dashboard\",\n      \"icon\": \"home\",\n      \"orderIndex\": 1,\n      \"parentId\": null\n    },\n    {\n      \"id\": 2,\n      \"code\": \"USERS_MGMT\",\n      \"label\": \"Gestión de Usuarios\",\n      \"route\": \"/users\",\n      \"icon\": \"people\",\n      \"orderIndex\": 2,\n      \"parentId\": null\n    }\n  ],\n  \"timestamp\": \"2026-07-31T10:00:00\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Obtener árbol de menús",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/menus/tree",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "menus", "tree"]
+						},
+						"description": "Retorna el árbol completo de menús con jerarquía padre-hijo, ordenado por order_index."
+					},
+					"response": [
+						{
+							"name": "Árbol de menús - 200 OK",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/menus/tree",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "menus", "tree"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json" }
+							],
+							"body": "{\n  \"status\": 200,\n  \"message\": \"Árbol de menús obtenido exitosamente\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"code\": \"DASHBOARD\",\n      \"label\": \"Dashboard\",\n      \"route\": \"/dashboard\",\n      \"icon\": \"home\",\n      \"orderIndex\": 1,\n      \"parentId\": null,\n      \"children\": [\n        {\n          \"id\": 3,\n          \"code\": \"DASHBOARD_STATS\",\n          \"label\": \"Estadísticas\",\n          \"route\": \"/dashboard/stats\",\n          \"icon\": \"bar_chart\",\n          \"orderIndex\": 1,\n          \"parentId\": 1,\n          \"children\": []\n        }\n      ]\n    },\n    {\n      \"id\": 2,\n      \"code\": \"USERS_MGMT\",\n      \"label\": \"Gestión de Usuarios\",\n      \"route\": \"/users\",\n      \"icon\": \"people\",\n      \"orderIndex\": 2,\n      \"parentId\": null,\n      \"children\": []\n    }\n  ],\n  \"timestamp\": \"2026-07-31T10:00:00\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Obtener menú por ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/menus/{{menuId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "menus", "{{menuId}}"]
+						},
+						"description": "Retorna un menú específico por su ID, incluyendo hijos."
+					},
+					"response": [
+						{
+							"name": "Menú encontrado - 200 OK",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/menus/{{menuId}}",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "menus", "{{menuId}}"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json" }
+							],
+							"body": "{\n  \"status\": 200,\n  \"message\": \"Menú obtenido exitosamente\",\n  \"data\": {\n    \"id\": 1,\n    \"code\": \"DASHBOARD\",\n    \"label\": \"Dashboard\",\n    \"route\": \"/dashboard\",\n    \"icon\": \"home\",\n    \"orderIndex\": 1,\n    \"parentId\": null,\n    \"children\": []\n  },\n  \"timestamp\": \"2026-07-31T10:00:00\"\n}"
+						},
+						{
+							"name": "Menú no encontrado - 404",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/menus/999",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "menus", "999"]
+								}
+							},
+							"status": "Not Found",
+							"code": 404,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json" }
+							],
+							"body": "{\n  \"status\": 404,\n  \"message\": \"Menú no encontrado con id: '999'\",\n  \"timestamp\": \"2026-07-31T10:00:00\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Crear menú",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"code\": \"DASHBOARD\",\n  \"label\": \"Dashboard\",\n  \"route\": \"/dashboard\",\n  \"icon\": \"home\",\n  \"parentId\": null,\n  \"orderIndex\": 1\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/menus",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "menus"]
+						},
+						"description": "Crea un nuevo menú. Usar parentId para asignarlo como hijo de otro menú."
+					},
+					"response": [
+						{
+							"name": "Menú creado - 201 Created",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{ "key": "Content-Type", "value": "application/json" }
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"code\": \"DASHBOARD\",\n  \"label\": \"Dashboard\",\n  \"route\": \"/dashboard\",\n  \"icon\": \"home\",\n  \"parentId\": null,\n  \"orderIndex\": 1\n}",
+									"options": { "raw": { "language": "json" } }
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/menus",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "menus"]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json" }
+							],
+							"body": "{\n  \"status\": 201,\n  \"message\": \"Menú creado exitosamente\",\n  \"data\": {\n    \"id\": 1,\n    \"code\": \"DASHBOARD\",\n    \"label\": \"Dashboard\",\n    \"route\": \"/dashboard\",\n    \"icon\": \"home\",\n    \"orderIndex\": 1,\n    \"parentId\": null,\n    \"children\": []\n  },\n  \"timestamp\": \"2026-07-31T10:00:00\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Actualizar menú",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"code\": \"DASHBOARD\",\n  \"label\": \"Panel Principal\",\n  \"route\": \"/dashboard\",\n  \"icon\": \"dashboard\",\n  \"parentId\": null,\n  \"orderIndex\": 1\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/menus/{{menuId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "menus", "{{menuId}}"]
+						},
+						"description": "Actualiza un menú existente."
+					},
+					"response": [
+						{
+							"name": "Menú actualizado - 200 OK",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{ "key": "Content-Type", "value": "application/json" }
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"code\": \"DASHBOARD\",\n  \"label\": \"Panel Principal\",\n  \"route\": \"/dashboard\",\n  \"icon\": \"dashboard\",\n  \"parentId\": null,\n  \"orderIndex\": 1\n}",
+									"options": { "raw": { "language": "json" } }
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/menus/{{menuId}}",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "menus", "{{menuId}}"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json" }
+							],
+							"body": "{\n  \"status\": 200,\n  \"message\": \"Menú actualizado exitosamente\",\n  \"data\": {\n    \"id\": 1,\n    \"code\": \"DASHBOARD\",\n    \"label\": \"Panel Principal\",\n    \"route\": \"/dashboard\",\n    \"icon\": \"dashboard\",\n    \"orderIndex\": 1,\n    \"parentId\": null,\n    \"children\": []\n  },\n  \"timestamp\": \"2026-07-31T11:00:00\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Eliminar menú",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/menus/{{menuId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "menus", "{{menuId}}"]
+						},
+						"description": "Elimina un menú del sistema."
+					},
+					"response": [
+						{
+							"name": "Menú eliminado - 200 OK",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/menus/{{menuId}}",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "menus", "{{menuId}}"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{ "key": "Content-Type", "value": "application/json" }
+							],
+							"body": "{\n  \"status\": 200,\n  \"message\": \"Menú eliminado exitosamente\",\n  \"timestamp\": \"2026-07-31T10:00:00\"\n}"
+						}
+					]
+				}
+			]
+		}
+	]
+}

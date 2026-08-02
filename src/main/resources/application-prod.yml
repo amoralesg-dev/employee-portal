@@ -1,6 +1,11 @@
 server:
   port: 8080
 
+app:
+  cors:
+    allowed-origins:
+      - https://employee-portal.rassini.com
+      
 spring:
   datasource:
     url: ${DB_URL:jdbc:mysql://localhost:3306/iam?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}

@@ -74,6 +74,32 @@ Usa las configuraciones en `.vscode/launch.json`:
 - **Employee Portal QA** → puerto 8084
 - **Employee Portal PROD** → puerto 8080
 
+## Seguridad y JWT
+
+El backend utiliza Spring Security y JWT para proteger la API.
+
+### Configuración del Secreto JWT
+En cada ambiente o al ejecutar localmente, se debe inyectar la variable de entorno `JWT_SECRET` (mínimo 256 bits).
+Si no se provee en entorno `dev`, utilizará una clave hardcodeada por defecto, pero **en producción siempre debes configurarla**.
+
+### Endpoints
+- **Públicos**: `/api/v1/auth/login`, `/api/v1/index`, `/actuator/health`, Swagger y API Docs.
+- **Protegidos**: Todos los demás (ej. `/api/v1/users/**`, `/api/v1/roles/**`).
+
+### Flujo de Login
+1. Haz un POST a `/api/v1/auth/login` con:
+   ```json
+   {
+     "username": "admin",
+     "password": "miPasswordEnBcrypt"
+   }
+   ```
+2. La API devolverá un `accessToken`.
+3. Para siguientes peticiones, incluye el token en el Header:
+   `Authorization: Bearer <tu_token_aqui>`
+
+*Nota: La contraseña en base de datos debe estar hasheada con BCrypt.*
+
 ## URLs útiles (perfil DEV)
 
 | Recurso | URL |
