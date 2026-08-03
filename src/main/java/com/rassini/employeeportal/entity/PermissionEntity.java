@@ -1,6 +1,7 @@
 package com.rassini.employeeportal.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -36,6 +37,12 @@ public class PermissionEntity {
     private LocalDateTime createdAt;
 
     // ─── Relaciones ───────────────────────────────────────────────────────────
+
+    /** Aplicación a la que pertenece el permiso. */
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "application_id", nullable = false)
+    private ApplicationEntity application;
 
     /** Lado inverso de la relación ManyToMany con RoleEntity. */
     @ManyToMany(mappedBy = "permissions", fetch = FetchType.LAZY)

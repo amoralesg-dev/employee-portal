@@ -1,6 +1,7 @@
 package com.rassini.employeeportal.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 import java.util.HashSet;
@@ -55,6 +56,12 @@ public class MenuEntity {
     private Set<MenuEntity> children = new HashSet<>();
 
     // ─── Relaciones ───────────────────────────────────────────────────────────
+
+    /** Aplicación a la que pertenece el menú. */
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "application_id", nullable = false)
+    private ApplicationEntity application;
 
     /** Lado inverso de la relación ManyToMany con PermissionEntity. */
     @ManyToMany(mappedBy = "menus", fetch = FetchType.LAZY)
