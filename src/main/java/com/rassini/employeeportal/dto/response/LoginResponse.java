@@ -22,4 +22,5 @@ public class LoginResponse {
     private Object roles;
     private Object permissions;
     private Object menus;
+    private Object businessUnits;
 }

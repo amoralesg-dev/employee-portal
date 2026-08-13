@@ -3,6 +3,7 @@ package com.rassini.employeeportal.service;
 import com.rassini.employeeportal.dto.request.UpdateStatusRequest;
 import com.rassini.employeeportal.dto.request.UserRequest;
 import com.rassini.employeeportal.dto.request.UserUpdateRequest;
+import com.rassini.employeeportal.dto.response.BusinessUnitResponse;
 import com.rassini.employeeportal.dto.response.RoleResponse;
 import com.rassini.employeeportal.dto.response.UserResponse;
 
@@ -29,4 +30,8 @@ public interface UserService {
     UserResponse replaceUserRoles(Long id, Set<Long> roleIds);
 
     com.rassini.employeeportal.dto.response.SimpleMessageResponse changePassword(Long id, com.rassini.employeeportal.dto.request.ChangePasswordRequest request);
+
+    List<BusinessUnitResponse> getUserBusinessUnits(Long id);
+
+    UserResponse replaceUserBusinessUnits(Long id, Set<Long> businessUnitIds);
 }

@@ -19,7 +19,7 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@ToString(exclude = {"passwordHash", "roles"})
+@ToString(exclude = {"passwordHash", "roles", "businessUnits"})
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class UserEntity {
 
@@ -59,4 +59,13 @@ public class UserEntity {
     )
     @Builder.Default
     private Set<RoleEntity> roles = new HashSet<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "user_business_unit",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "business_unit_id")
+    )
+    @Builder.Default
+    private Set<BusinessUnitEntity> businessUnits = new HashSet<>();
 }

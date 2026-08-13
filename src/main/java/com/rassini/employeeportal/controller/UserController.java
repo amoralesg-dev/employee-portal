@@ -5,6 +5,8 @@ import com.rassini.employeeportal.dto.request.UpdateStatusRequest;
 import com.rassini.employeeportal.dto.request.UserRequest;
 import com.rassini.employeeportal.dto.request.UserUpdateRequest;
 import com.rassini.employeeportal.dto.response.ApiResponse;
+import com.rassini.employeeportal.dto.response.BusinessUnitResponse;
+import com.rassini.employeeportal.dto.request.AssignBusinessUnitsRequest;
 import com.rassini.employeeportal.dto.response.MenuResponse;
 import com.rassini.employeeportal.dto.response.RoleResponse;
 import com.rassini.employeeportal.dto.response.UserAccessContextResponse;
@@ -116,6 +118,19 @@ public class UserController {
                                                                        @Valid @RequestBody AssignRolesRequest request) {
         UserResponse user = userService.replaceUserRoles(id, request.getRoleIds());
         return ResponseEntity.ok(ApiResponse.success("Roles del usuario actualizados exitosamente", user));
+    }
+
+    @GetMapping("/{id}/business-units")
+    public ResponseEntity<ApiResponse<List<BusinessUnitResponse>>> getUserBusinessUnits(@PathVariable Long id) {
+        List<BusinessUnitResponse> businessUnits = userService.getUserBusinessUnits(id);
+        return ResponseEntity.ok(ApiResponse.success("Unidades de negocio obtenidas exitosamente", businessUnits));
+    }
+
+    @PutMapping("/{id}/business-units")
+    public ResponseEntity<ApiResponse<UserResponse>> replaceUserBusinessUnits(@PathVariable Long id,
+                                                                       @Valid @RequestBody AssignBusinessUnitsRequest request) {
+        UserResponse user = userService.replaceUserBusinessUnits(id, request.getBusinessUnitIds());
+        return ResponseEntity.ok(ApiResponse.success("Unidades de negocio actualizadas exitosamente", user));
     }
 
     @GetMapping("/{id}/menus")

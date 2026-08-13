@@ -83,6 +83,7 @@ public class AuthServiceImpl implements AuthService {
                 .roles(accessContext.getRoles())
                 .permissions(accessContext.getPermissions())
                 .menus(accessContext.getMenus())
+                .businessUnits(accessContext.getBusinessUnits())
                 .build();
     }
 
@@ -132,7 +133,8 @@ public class AuthServiceImpl implements AuthService {
                 .user(authUser)
                 .roles(accessContext.getRoles())
                 .permissions(accessContext.getPermissions())
-                .menus(accessContext.getMenus());
+                .menus(accessContext.getMenus())
+                .businessUnits(accessContext.getBusinessUnits());
         
         log.debug("Token recibido en buildLoginResponse: {}", token);
         

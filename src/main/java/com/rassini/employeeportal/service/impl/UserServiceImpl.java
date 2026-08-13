@@ -11,6 +11,9 @@ import com.rassini.employeeportal.exception.BusinessException;
 import com.rassini.employeeportal.exception.ResourceNotFoundException;
 import com.rassini.employeeportal.mapper.RoleMapper;
 import com.rassini.employeeportal.mapper.UserMapper;
+import com.rassini.employeeportal.dto.response.BusinessUnitResponse;
+import com.rassini.employeeportal.entity.BusinessUnitEntity;
+import com.rassini.employeeportal.repository.BusinessUnitRepository;
 import com.rassini.employeeportal.repository.RoleRepository;
 import com.rassini.employeeportal.repository.UserRepository;
 import com.rassini.employeeportal.service.UserService;
@@ -33,6 +36,7 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final BusinessUnitRepository businessUnitRepository;
     private final UserMapper userMapper;
     private final RoleMapper roleMapper;
     private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
@@ -148,6 +152,43 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
 
         return new com.rassini.employeeportal.dto.response.SimpleMessageResponse(200, "Contraseña actualizada exitosamente");
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<BusinessUnitResponse> getUserBusinessUnits(Long id) {
+        UserEntity user = findUserOrThrow(id);
+        return user.getBusinessUnits().stream()
+                .map(this::mapBusinessUnitToResponse)
+                .toList();
+    }
+
+    @Override
+    public UserResponse replaceUserBusinessUnits(Long id, Set<Long> businessUnitIds) {
+        UserEntity user = findUserOrThrow(id);
+
+        List<BusinessUnitEntity> businessUnits = businessUnitRepository.findAllById(businessUnitIds);
+        if (businessUnits.size() != businessUnitIds.size()) {
+            throw new BusinessException("Uno o más IDs de unidad de negocio no existen");
+        }
+
+        user.setBusinessUnits(new HashSet<>(businessUnits));
+        user.setUpdatedAt(LocalDateTime.now());
+
+        UserEntity saved = userRepository.save(user);
+        return userMapper.toResponse(saved);
+    }
+
+    private BusinessUnitResponse mapBusinessUnitToResponse(BusinessUnitEntity entity) {
+        return BusinessUnitResponse.builder()
+                .id(entity.getId())
+                .code(entity.getCode())
+                .name(entity.getName())
+                .parentId(entity.getParent() != null ? entity.getParent().getId() : null)
+                .enabled(entity.getEnabled())
+                .createdAt(entity.getCreatedAt())
+                .updatedAt(entity.getUpdatedAt())
+                .build();
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────

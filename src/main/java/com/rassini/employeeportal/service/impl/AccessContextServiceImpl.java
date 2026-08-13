@@ -2,6 +2,7 @@ package com.rassini.employeeportal.service.impl;
 
 import com.rassini.employeeportal.dto.response.MenuResponse;
 import com.rassini.employeeportal.dto.response.UserAccessContextResponse;
+import com.rassini.employeeportal.dto.response.BusinessUnitResponse;
 import com.rassini.employeeportal.entity.MenuEntity;
 import com.rassini.employeeportal.entity.PermissionEntity;
 import com.rassini.employeeportal.entity.RoleEntity;
@@ -66,12 +67,26 @@ public class AccessContextServiceImpl implements AccessContextService {
         // 5. Construir árbol usando parent_id y ordenar por order_index
         List<MenuResponse> menuTree = buildMenuTree(allMenus);
 
+        // 6. Consolidar unidades de negocio
+        List<BusinessUnitResponse> businessUnits = user.getBusinessUnits().stream()
+                .map(bu -> BusinessUnitResponse.builder()
+                        .id(bu.getId())
+                        .code(bu.getCode())
+                        .name(bu.getName())
+                        .parentId(bu.getParent() != null ? bu.getParent().getId() : null)
+                        .enabled(bu.getEnabled())
+                        .createdAt(bu.getCreatedAt())
+                        .updatedAt(bu.getUpdatedAt())
+                        .build())
+                .toList();
+
         return UserAccessContextResponse.builder()
                 .userId(user.getId())
                 .username(user.getUsername())
                 .roles(roleCodes)
                 .permissions(permissionCodes)
                 .menus(menuTree)
+                .businessUnits(businessUnits)
                 .build();
     }
 
