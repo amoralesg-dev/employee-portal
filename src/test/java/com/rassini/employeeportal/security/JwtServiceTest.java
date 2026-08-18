@@ -1,5 +1,6 @@
 package com.rassini.employeeportal.security;
 
+import io.jsonwebtoken.Claims;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -47,5 +48,19 @@ class JwtServiceTest {
         String token = jwtService.generateRefreshToken(userDetails);
         assertNotNull(token);
         assertTrue(jwtService.isTokenValid(token, userDetails));
+    }
+
+    @Test
+    void testExtractSpecificClaim() {
+        String token = jwtService.generateToken(userDetails);
+        String subject = jwtService.extractClaim(token, Claims::getSubject);
+        assertEquals("admin", subject);
+    }
+
+    @Test
+    void testTokenValidationFailureDifferentUser() {
+        String token = jwtService.generateToken(userDetails);
+        UserDetails otherUser = new User("otherUser", "pass", Collections.emptyList());
+        assertFalse(jwtService.isTokenValid(token, otherUser));
     }
 }

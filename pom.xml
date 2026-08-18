@@ -166,7 +166,7 @@
 				<configuration>
 					<includes>
 						<include>com/rassini/employeeportal/service/impl/*</include>
-						<include>com/rassini/employeeportal/security/JwtService.class</include>
+						<include>com/rassini/employeeportal/security/JwtService</include>
 					</includes>
 					<rules>
 						<rule>
