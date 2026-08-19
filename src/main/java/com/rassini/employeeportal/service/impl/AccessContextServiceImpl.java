@@ -11,6 +11,7 @@ import com.rassini.employeeportal.exception.ResourceNotFoundException;
 import com.rassini.employeeportal.repository.UserRepository;
 import com.rassini.employeeportal.service.AccessContextService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +33,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@Slf4j
 public class AccessContextServiceImpl implements AccessContextService {
 
     private final UserRepository userRepository;
@@ -59,13 +61,19 @@ public class AccessContextServiceImpl implements AccessContextService {
                 .sorted()
                 .toList();
 
+        log.info("EVIDENCIA - allPermissions: {}", permissionCodes);
+
         // 4. Consolidar menús sin duplicados
         Set<MenuEntity> allMenus = allPermissions.stream()
                 .flatMap(permission -> permission.getMenus().stream())
                 .collect(Collectors.toSet());
 
+        log.info("EVIDENCIA - allMenus: {}", allMenus.stream().map(MenuEntity::getCode).toList());
+
         // 5. Construir árbol usando parent_id y ordenar por order_index
         List<MenuResponse> menuTree = buildMenuTree(allMenus);
+
+        log.info("EVIDENCIA - buildMenuTree: {}", menuTree);
 
         // 6. Consolidar unidades de negocio
         List<BusinessUnitResponse> businessUnits = user.getBusinessUnits().stream()
