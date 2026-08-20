@@ -43,6 +43,10 @@ public class UserEntity {
     @Column(name = "enabled", columnDefinition = "TINYINT(1)")
     private Boolean enabled;
 
+    @Column(name = "force_password_change", columnDefinition = "TINYINT(1)")
+    @Builder.Default
+    private Boolean forcePasswordChange = false;
+
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 

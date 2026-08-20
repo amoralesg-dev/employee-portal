@@ -14,4 +14,5 @@ public class AuthenticatedUserResponse {
     private String username;
     private String email;
     private Boolean enabled;
+    private Boolean forcePasswordChange;
 }

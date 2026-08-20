@@ -7,5 +7,6 @@ public interface AuthService {
     LoginResponse login(LoginRequest request);
     com.rassini.employeeportal.dto.response.MeResponse getMe(String username);
     void resetPassword(com.rassini.employeeportal.dto.request.ResetPasswordRequest request);
+    void changePassword(String username, com.rassini.employeeportal.dto.request.ChangePasswordRequest request);
     LoginResponse refresh(com.rassini.employeeportal.dto.request.RefreshTokenRequest request);
 }

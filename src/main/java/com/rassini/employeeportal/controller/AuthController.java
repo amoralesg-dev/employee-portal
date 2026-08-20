@@ -42,6 +42,15 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/change-password")
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(summary = "Cambiar contraseña", description = "Permite a un usuario autenticado cambiar su propia contraseña y remueve la bandera de forzar cambio.")
+    public ResponseEntity<Void> changePassword(@Valid @RequestBody com.rassini.employeeportal.dto.request.ChangePasswordRequest request, Authentication authentication) {
+        String username = authentication.getName();
+        authService.changePassword(username, request);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/refresh")
     @Operation(summary = "Refrescar token", description = "Genera un nuevo JWT de acceso utilizando un refresh token válido")
     public ResponseEntity<LoginResponse> refresh(@Valid @RequestBody com.rassini.employeeportal.dto.request.RefreshTokenRequest request) {

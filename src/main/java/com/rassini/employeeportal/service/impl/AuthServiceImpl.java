@@ -74,6 +74,7 @@ public class AuthServiceImpl implements AuthService {
                 .username(user.getUsername())
                 .email(user.getEmail())
                 .enabled(user.getEnabled())
+                .forcePasswordChange(user.getForcePasswordChange())
                 .build();
 
         UserAccessContextResponse accessContext = accessContextService.getAccessContext(user.getId());
@@ -94,6 +95,27 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " + request.getUsername()));
         
         user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        user.setForcePasswordChange(true);
+        user.setUpdatedAt(java.time.LocalDateTime.now());
+        userRepository.save(user);
+    }
+
+    @Override
+    @Transactional
+    public void changePassword(String username, com.rassini.employeeportal.dto.request.ChangePasswordRequest request) {
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new IllegalArgumentException("La nueva contraseña y la confirmación no coinciden");
+        }
+
+        UserEntity user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " + username));
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {
+            throw new IllegalArgumentException("La contraseña actual es incorrecta");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        user.setForcePasswordChange(false);
         user.setUpdatedAt(java.time.LocalDateTime.now());
         userRepository.save(user);
     }
@@ -125,6 +147,7 @@ public class AuthServiceImpl implements AuthService {
                 .username(user.getUsername())
                 .email(user.getEmail())
                 .enabled(user.getEnabled())
+                .forcePasswordChange(user.getForcePasswordChange())
                 .build();
 
         UserAccessContextResponse accessContext = accessContextService.getAccessContext(user.getId());
