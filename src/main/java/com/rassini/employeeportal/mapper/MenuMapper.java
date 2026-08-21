@@ -48,6 +48,7 @@ public class MenuMapper {
         List<MenuResponse> children = entity.getChildren() != null && !entity.getChildren().isEmpty()
                 ? entity.getChildren().stream()
                     .map(this::toResponse)
+                    .sorted(java.util.Comparator.comparing(MenuResponse::getOrderIndex, java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder())))
                     .toList()
                 : Collections.emptyList();
 
@@ -59,6 +60,7 @@ public class MenuMapper {
                 .icon(entity.getIcon())
                 .orderIndex(entity.getOrderIndex())
                 .parentId(entity.getParent() != null ? entity.getParent().getId() : null)
+                .applicationId(entity.getApplication() != null ? entity.getApplication().getId() : null)
                 .children(children)
                 .build();
     }
@@ -79,6 +81,7 @@ public class MenuMapper {
                 .icon(entity.getIcon())
                 .orderIndex(entity.getOrderIndex())
                 .parentId(entity.getParent() != null ? entity.getParent().getId() : null)
+                .applicationId(entity.getApplication() != null ? entity.getApplication().getId() : null)
                 .build();
     }
 }

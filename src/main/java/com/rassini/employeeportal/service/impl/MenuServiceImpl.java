@@ -6,8 +6,11 @@ import com.rassini.employeeportal.entity.MenuEntity;
 import com.rassini.employeeportal.exception.BusinessException;
 import com.rassini.employeeportal.exception.ResourceNotFoundException;
 import com.rassini.employeeportal.mapper.MenuMapper;
+import com.rassini.employeeportal.repository.ApplicationRepository;
+import com.rassini.employeeportal.entity.ApplicationEntity;
 import com.rassini.employeeportal.repository.MenuRepository;
 import com.rassini.employeeportal.service.MenuService;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +26,7 @@ import java.util.List;
 public class MenuServiceImpl implements MenuService {
 
     private final MenuRepository menuRepository;
+    private final ApplicationRepository applicationRepository;
     private final MenuMapper menuMapper;
 
     @Override
@@ -48,6 +52,10 @@ public class MenuServiceImpl implements MenuService {
 
         MenuEntity entity = menuMapper.toEntity(request);
 
+        ApplicationEntity application = applicationRepository.findById(request.getApplicationId())
+                .orElseThrow(() -> new ResourceNotFoundException("Aplicación", "id", request.getApplicationId()));
+        entity.setApplication(application);
+
         if (request.getParentId() != null) {
             MenuEntity parent = menuRepository.findById(request.getParentId())
                     .orElseThrow(() -> new ResourceNotFoundException("Menú padre", "id", request.getParentId()));
@@ -71,6 +79,10 @@ public class MenuServiceImpl implements MenuService {
         menu.setRoute(request.getRoute());
         menu.setIcon(request.getIcon());
         menu.setOrderIndex(request.getOrderIndex());
+
+        ApplicationEntity application = applicationRepository.findById(request.getApplicationId())
+                .orElseThrow(() -> new ResourceNotFoundException("Aplicación", "id", request.getApplicationId()));
+        menu.setApplication(application);
 
         if (request.getParentId() != null) {
             if (request.getParentId().equals(id)) {

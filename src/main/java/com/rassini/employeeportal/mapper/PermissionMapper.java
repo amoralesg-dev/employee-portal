@@ -58,6 +58,7 @@ public class PermissionMapper {
                 .code(entity.getCode())
                 .description(entity.getDescription())
                 .createdAt(entity.getCreatedAt())
+                .applicationId(entity.getApplication() != null ? entity.getApplication().getId() : null)
                 .menus(menus)
                 .build();
     }
@@ -75,6 +76,7 @@ public class PermissionMapper {
                 .code(entity.getCode())
                 .description(entity.getDescription())
                 .createdAt(entity.getCreatedAt())
+                .applicationId(entity.getApplication() != null ? entity.getApplication().getId() : null)
                 .build();
     }
 }

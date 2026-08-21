@@ -1,6 +1,7 @@
 package com.rassini.employeeportal.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -35,4 +36,7 @@ public class MenuRequest {
 
     /** ID del menú padre; null si es menú raíz. */
     private Long parentId;
+
+    @NotNull(message = "El ID de la aplicación es obligatorio")
+    private Long applicationId;
 }

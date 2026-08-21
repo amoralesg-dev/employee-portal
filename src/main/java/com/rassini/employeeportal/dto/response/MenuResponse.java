@@ -30,6 +30,9 @@ public class MenuResponse {
     /** ID del menú padre; null si es menú raíz. */
     private Long parentId;
 
+    /** ID de la aplicación a la que pertenece el menú. */
+    private Long applicationId;
+
     /** Submenús hijos. Solo se pobla en consultas jerárquicas. */
     private List<MenuResponse> children;
 }

@@ -15,4 +15,6 @@ public interface PermissionRepository extends JpaRepository<PermissionEntity, Lo
     Optional<PermissionEntity> findByCode(String code);
 
     boolean existsByCode(String code);
+
+    boolean existsByApplicationId(Long applicationId);
 }

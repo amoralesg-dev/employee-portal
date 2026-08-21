@@ -25,4 +25,9 @@ public interface MenuRepository extends JpaRepository<MenuEntity, Long> {
      * Retorna los menús cuyos IDs estén en la colección dada.
      */
     List<MenuEntity> findByIdIn(Collection<Long> ids);
+
+    /**
+     * Verifica si existen menús asociados a una aplicación.
+     */
+    boolean existsByApplicationId(Long applicationId);
 }

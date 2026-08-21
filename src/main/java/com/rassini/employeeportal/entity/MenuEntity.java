@@ -52,6 +52,7 @@ public class MenuEntity {
 
     /** Submenús hijos que tienen a este menú como padre. */
     @OneToMany(mappedBy = "parent", fetch = FetchType.LAZY)
+    @OrderBy("orderIndex ASC")
     @Builder.Default
     private Set<MenuEntity> children = new HashSet<>();
 

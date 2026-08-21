@@ -23,6 +23,7 @@ public class PermissionResponse {
     private String code;
     private String description;
     private LocalDateTime createdAt;
+    private Long applicationId;
 
     /** Menús asignados al permiso (sin relaciones anidadas profundas). */
     private List<MenuResponse> menus;

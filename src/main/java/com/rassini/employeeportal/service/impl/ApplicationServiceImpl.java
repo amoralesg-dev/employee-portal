@@ -3,7 +3,10 @@ package com.rassini.employeeportal.service.impl;
 import com.rassini.employeeportal.dto.ApplicationDto;
 import com.rassini.employeeportal.entity.ApplicationEntity;
 import com.rassini.employeeportal.repository.ApplicationRepository;
+import com.rassini.employeeportal.repository.MenuRepository;
+import com.rassini.employeeportal.repository.PermissionRepository;
 import com.rassini.employeeportal.service.ApplicationService;
+import com.rassini.employeeportal.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +20,8 @@ import java.util.stream.Collectors;
 public class ApplicationServiceImpl implements ApplicationService {
 
     private final ApplicationRepository applicationRepository;
+    private final MenuRepository menuRepository;
+    private final PermissionRepository permissionRepository;
 
     @Override
     @Transactional
@@ -77,6 +82,9 @@ public class ApplicationServiceImpl implements ApplicationService {
     @Override
     @Transactional
     public void delete(Long id) {
+        if (menuRepository.existsByApplicationId(id) || permissionRepository.existsByApplicationId(id)) {
+            throw new BusinessException("No es posible eliminar la aplicación porque tiene menús o permisos asociados.");
+        }
         applicationRepository.deleteById(id);
     }
 
