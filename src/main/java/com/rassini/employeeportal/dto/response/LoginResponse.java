@@ -18,9 +18,9 @@ public class LoginResponse {
     private Long expiresIn;
     private AuthenticatedUserResponse user;
     
-    // We can also reuse UserAccessContextResponse or include elements directly
     private Object roles;
     private Object permissions;
     private Object menus;
-    private Object businessUnits;
+    private List<BusinessUnitResponse> businessUnits;
+    private Boolean hasAllBusinessUnits;
 }

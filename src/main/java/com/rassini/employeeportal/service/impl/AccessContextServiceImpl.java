@@ -7,13 +7,15 @@ import com.rassini.employeeportal.entity.MenuEntity;
 import com.rassini.employeeportal.entity.PermissionEntity;
 import com.rassini.employeeportal.entity.RoleEntity;
 import com.rassini.employeeportal.entity.UserEntity;
+import com.rassini.employeeportal.entity.BusinessUnitEntity;
 import com.rassini.employeeportal.exception.ResourceNotFoundException;
 import com.rassini.employeeportal.repository.UserRepository;
+import com.rassini.employeeportal.repository.BusinessUnitRepository;
 import com.rassini.employeeportal.service.AccessContextService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.rassini.employeeportal.mapper.BusinessUnitMapper;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -31,12 +33,21 @@ import java.util.stream.Collectors;
  * </ol>
  */
 @Service
-@RequiredArgsConstructor
 @Transactional(readOnly = true)
 @Slf4j
 public class AccessContextServiceImpl implements AccessContextService {
 
     private final UserRepository userRepository;
+    private final BusinessUnitRepository businessUnitRepository;
+    private final BusinessUnitMapper businessUnitMapper;
+
+    public AccessContextServiceImpl(UserRepository userRepository, 
+                                    BusinessUnitRepository businessUnitRepository,
+                                    BusinessUnitMapper businessUnitMapper) {
+        this.userRepository = userRepository;
+        this.businessUnitRepository = businessUnitRepository;
+        this.businessUnitMapper = businessUnitMapper;
+    }
 
     @Override
     public UserAccessContextResponse getAccessContext(Long userId) {
@@ -75,18 +86,23 @@ public class AccessContextServiceImpl implements AccessContextService {
 
         log.info("EVIDENCIA - buildMenuTree: {}", menuTree);
 
-        // 6. Consolidar unidades de negocio
-        List<BusinessUnitResponse> businessUnits = user.getBusinessUnits().stream()
-                .map(bu -> BusinessUnitResponse.builder()
-                        .id(bu.getId())
-                        .code(bu.getCode())
-                        .name(bu.getName())
-                        .parentId(bu.getParent() != null ? bu.getParent().getId() : null)
-                        .enabled(bu.getEnabled())
-                        .createdAt(bu.getCreatedAt())
-                        .updatedAt(bu.getUpdatedAt())
-                        .build())
-                .toList();
+        // 6. Consolidar unidades de negocio aplicando las reglas de negocio
+        List<BusinessUnitResponse> businessUnits = Collections.emptyList();
+        boolean hasAllBUs = user.getHasAllBusinessUnits() != null ? user.getHasAllBusinessUnits() : false;
+
+        if (hasAllBUs) {
+            // Usuario Global: Obtener todas las BUs habilitadas
+            List<BusinessUnitEntity> allEnabledBUs = businessUnitRepository.findByEnabledTrue();
+            businessUnits = businessUnitMapper.toResponseList(allEnabledBUs);
+        } else {
+            // Usuario Restringido: Obtener solo las asignadas y habilitadas
+            if (user.getBusinessUnits() != null) {
+                List<BusinessUnitEntity> enabledBUs = user.getBusinessUnits().stream()
+                        .filter(bu -> Boolean.TRUE.equals(bu.getEnabled()))
+                        .toList();
+                businessUnits = businessUnitMapper.toResponseList(enabledBUs);
+            }
+        }
 
         return UserAccessContextResponse.builder()
                 .userId(user.getId())
@@ -95,6 +111,7 @@ public class AccessContextServiceImpl implements AccessContextService {
                 .permissions(permissionCodes)
                 .menus(menuTree)
                 .businessUnits(businessUnits)
+                .hasAllBusinessUnits(hasAllBUs)
                 .build();
     }
 

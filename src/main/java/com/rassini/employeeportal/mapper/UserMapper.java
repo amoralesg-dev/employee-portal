@@ -1,6 +1,7 @@
 package com.rassini.employeeportal.mapper;
 
 import com.rassini.employeeportal.dto.request.UserRequest;
+import com.rassini.employeeportal.dto.response.BusinessUnitResponse;
 import com.rassini.employeeportal.dto.response.RoleResponse;
 import com.rassini.employeeportal.dto.response.UserResponse;
 import com.rassini.employeeportal.entity.UserEntity;
@@ -19,9 +20,11 @@ import java.util.List;
 public class UserMapper {
 
     private final RoleMapper roleMapper;
+    private final BusinessUnitMapper businessUnitMapper;
 
-    public UserMapper(RoleMapper roleMapper) {
+    public UserMapper(RoleMapper roleMapper, BusinessUnitMapper businessUnitMapper) {
         this.roleMapper = roleMapper;
+        this.businessUnitMapper = businessUnitMapper;
     }
 
     /**
@@ -39,6 +42,7 @@ public class UserMapper {
                 .email(request.getEmail())
                 .passwordHash(request.getPassword())
                 .enabled(true)
+                .hasAllBusinessUnits(request.getHasAllBusinessUnits() != null ? request.getHasAllBusinessUnits() : false)
                 .build();
     }
 
@@ -58,6 +62,10 @@ public class UserMapper {
                     .toList()
                 : Collections.emptyList();
 
+        List<BusinessUnitResponse> bus = entity.getBusinessUnits() != null
+                ? businessUnitMapper.toResponseList(entity.getBusinessUnits())
+                : Collections.emptyList();
+
         return UserResponse.builder()
                 .id(entity.getId())
                 .username(entity.getUsername())
@@ -66,6 +74,8 @@ public class UserMapper {
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .roles(roles)
+                .businessUnits(bus)
+                .hasAllBusinessUnits(entity.getHasAllBusinessUnits() != null ? entity.getHasAllBusinessUnits() : false)
                 .build();
     }
 }

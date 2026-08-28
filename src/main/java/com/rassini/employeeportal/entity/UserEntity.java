@@ -72,4 +72,8 @@ public class UserEntity {
     )
     @Builder.Default
     private Set<BusinessUnitEntity> businessUnits = new HashSet<>();
+
+    @Column(name = "has_all_business_units", columnDefinition = "TINYINT(1)", nullable = false)
+    @Builder.Default
+    private Boolean hasAllBusinessUnits = false;
 }

@@ -28,4 +28,5 @@ public class UserAccessContextResponse {
     private List<String> permissions;
     private List<MenuResponse> menus;
     private List<BusinessUnitResponse> businessUnits;
+    private Boolean hasAllBusinessUnits;
 }

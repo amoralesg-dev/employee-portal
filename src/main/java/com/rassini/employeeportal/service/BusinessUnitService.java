@@ -12,4 +12,7 @@ public interface BusinessUnitService {
     BusinessUnitResponse createBusinessUnit(BusinessUnitRequest request);
     BusinessUnitResponse updateBusinessUnit(Long id, BusinessUnitRequest request);
     void deleteBusinessUnit(Long id);
+    BusinessUnitResponse updateStatus(Long id, boolean enabled);
+    List<com.rassini.employeeportal.dto.response.UserResponse> getBusinessUnitUsers(Long id);
+    void replaceBusinessUnitUsers(Long id, java.util.Set<Long> userIds);
 }

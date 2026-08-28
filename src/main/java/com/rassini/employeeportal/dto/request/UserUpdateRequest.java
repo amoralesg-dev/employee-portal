@@ -8,6 +8,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.Set;
+
 /**
  * DTO de solicitud para actualizar datos de un usuario existente.
  * <p>
@@ -27,4 +29,7 @@ public class UserUpdateRequest {
     @Email(message = "El formato del email no es válido")
     @Size(max = 150, message = "El email no puede exceder 150 caracteres")
     private String email;
+
+    private Boolean hasAllBusinessUnits;
+    private Set<Long> businessUnitIds;
 }
