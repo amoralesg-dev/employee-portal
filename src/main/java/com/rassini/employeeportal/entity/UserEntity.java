@@ -19,7 +19,7 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@ToString(exclude = {"passwordHash", "roles", "businessUnits"})
+@ToString(exclude = {"passwordHash", "roles", "businessUnits", "mfaSecret"})
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class UserEntity {
 
@@ -76,4 +76,19 @@ public class UserEntity {
     @Column(name = "has_all_business_units", columnDefinition = "TINYINT(1)", nullable = false)
     @Builder.Default
     private Boolean hasAllBusinessUnits = false;
+
+    @Column(name = "mfa_enabled", columnDefinition = "TINYINT(1)", nullable = false)
+    @Builder.Default
+    private Boolean mfaEnabled = false;
+
+    @Column(name = "mfa_required", columnDefinition = "TINYINT(1)", nullable = false)
+    @Builder.Default
+    private Boolean mfaRequired = false;
+
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @Column(name = "mfa_secret", length = 255)
+    private String mfaSecret;
+
+    @Column(name = "mfa_enabled_at")
+    private LocalDateTime mfaEnabledAt;
 }

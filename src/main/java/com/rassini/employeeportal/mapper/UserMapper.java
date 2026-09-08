@@ -76,6 +76,9 @@ public class UserMapper {
                 .roles(roles)
                 .businessUnits(bus)
                 .hasAllBusinessUnits(entity.getHasAllBusinessUnits() != null ? entity.getHasAllBusinessUnits() : false)
+                .mfaEnabled(Boolean.TRUE.equals(entity.getMfaEnabled()))
+                .mfaSecretExists(entity.getMfaSecret() != null)
+                .mfaRequired(Boolean.TRUE.equals(entity.getMfaRequired()))
                 .build();
     }
 }

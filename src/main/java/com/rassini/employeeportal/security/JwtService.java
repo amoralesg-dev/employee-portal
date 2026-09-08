@@ -43,6 +43,24 @@ public class JwtService {
         return buildToken(extraClaims, userDetails, expirationTime);
     }
 
+    public String generateTempToken(com.rassini.employeeportal.entity.UserEntity user, String jti, boolean setupRequired) {
+        Map<String, Object> extraClaims = new HashMap<>();
+        extraClaims.put("token_type", setupRequired ? "MFA_SETUP" : "MFA_VERIFY");
+        extraClaims.put("mfa_pending", true);
+        extraClaims.put("user_id", user.getId());
+
+        long expirationMs = setupRequired ? (15 * 60 * 1000) : (5 * 60 * 1000); // 15 min para setup, 5 min para login
+
+        return Jwts.builder()
+                .claims(extraClaims)
+                .subject(user.getUsername())
+                .id(jti)
+                .issuedAt(new Date(System.currentTimeMillis()))
+                .expiration(new Date(System.currentTimeMillis() + expirationMs))
+                .signWith(getSignInKey())
+                .compact();
+    }
+
     public String generateRefreshToken(UserDetails userDetails) {
         long refreshExpirationTime = jwtExpirationMinutes * 60 * 1000 * 24; // 24 times the normal expiration
         return buildToken(new HashMap<>(), userDetails, refreshExpirationTime);
@@ -76,7 +94,7 @@ public class JwtService {
         return extractClaim(token, Claims::getExpiration);
     }
 
-    private Claims extractAllClaims(String token) {
+    public Claims extractAllClaims(String token) {
         return Jwts
                 .parser()
                 .verifyWith(getSignInKey())

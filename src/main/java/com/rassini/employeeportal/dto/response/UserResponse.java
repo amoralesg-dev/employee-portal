@@ -33,4 +33,8 @@ public class UserResponse {
 
     private List<BusinessUnitResponse> businessUnits;
     private Boolean hasAllBusinessUnits;
+    
+    private Boolean mfaEnabled;
+    private Boolean mfaSecretExists;
+    private Boolean mfaRequired;
 }
