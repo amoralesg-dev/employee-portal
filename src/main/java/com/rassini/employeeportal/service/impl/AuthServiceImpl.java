@@ -16,10 +16,15 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -53,7 +58,8 @@ public class AuthServiceImpl implements AuthService {
         }
 
         CustomUserDetails userDetails = new CustomUserDetails(user);
-        String token = jwtService.generateToken(userDetails);
+        Map<String, Object> extraClaims = buildTokenClaims(userDetails);
+        String token = jwtService.generateToken(extraClaims, userDetails);
         String refreshToken = jwtService.generateRefreshToken(userDetails);
         
         log.debug("Generando token para el usuario: {}", user.getUsername());
@@ -136,10 +142,37 @@ public class AuthServiceImpl implements AuthService {
             throw new RuntimeException("Refresh token inválido o expirado");
         }
         
-        String newToken = jwtService.generateToken(userDetails);
+        Map<String, Object> extraClaims = buildTokenClaims(userDetails);
+        String newToken = jwtService.generateToken(extraClaims, userDetails);
         String newRefreshToken = jwtService.generateRefreshToken(userDetails);
         
         return buildLoginResponse(user, newToken, newRefreshToken);
+    }
+
+    /**
+     * Construye los claims extra para el access token:
+     * <ul>
+     *   <li>{@code authorities}: lista completa de autoridades ({@code ROLE_<CODIGO>} por rol
+     *       y códigos de permiso sin transformar).</li>
+     *   <li>{@code roles}: lista derivada únicamente de las autoridades con prefijo {@code ROLE_},
+     *       removiendo dicho prefijo (ejemplo: {@code ROLE_APROBADOR} &rarr; {@code APROBADOR}).</li>
+     * </ul>
+     * Estos claims permiten que los Resource Servers (portal de aprobaciones) autoricen por rol.
+     */
+    private Map<String, Object> buildTokenClaims(CustomUserDetails userDetails) {
+        List<String> authorities = userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .toList();
+
+        List<String> roles = authorities.stream()
+                .filter(authority -> authority.startsWith("ROLE_"))
+                .map(authority -> authority.substring("ROLE_".length()))
+                .toList();
+
+        Map<String, Object> extraClaims = new HashMap<>();
+        extraClaims.put("authorities", authorities);
+        extraClaims.put("roles", roles);
+        return extraClaims;
     }
 
     private LoginResponse buildLoginResponse(UserEntity user, String token, String refreshToken) {

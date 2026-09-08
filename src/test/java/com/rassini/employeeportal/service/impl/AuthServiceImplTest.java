@@ -3,14 +3,8 @@ package com.rassini.employeeportal.service.impl;
 import com.rassini.employeeportal.dto.request.LoginRequest;
 import com.rassini.employeeportal.dto.request.RefreshTokenRequest;
 import com.rassini.employeeportal.dto.request.ResetPasswordRequest;
-import com.rassini.employeeportal.entity.UserEntity;
-import com.rassini.employeeportal.repository.UserRepository;
-import com.rassini.employeeportal.security.JwtService;
-import com.rassini.employeeportal.service.AccessContextService;
-import com.rassini.employeeportal.dto.response.UserAccessContextResponse;
-import com.rassini.employeeportal.dto.request.LoginRequest;
-import com.rassini.employeeportal.dto.request.RefreshTokenRequest;
-import com.rassini.employeeportal.dto.request.ResetPasswordRequest;
+import com.rassini.employeeportal.entity.PermissionEntity;
+import com.rassini.employeeportal.entity.RoleEntity;
 import com.rassini.employeeportal.entity.UserEntity;
 import com.rassini.employeeportal.repository.UserRepository;
 import com.rassini.employeeportal.security.JwtService;
@@ -19,6 +13,7 @@ import com.rassini.employeeportal.dto.response.UserAccessContextResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -29,7 +24,11 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -54,10 +53,74 @@ class AuthServiceImplTest {
         LoginRequest req = new LoginRequest(); req.setUsername("u"); req.setPassword("p");
         UserEntity u = new UserEntity(); u.setUsername("u"); u.setEnabled(true);
         when(repository.findByUsername("u")).thenReturn(Optional.of(u));
-        when(jwtService.generateToken(any())).thenReturn("t");
+        when(jwtService.generateToken(anyMap(), any())).thenReturn("t");
         when(jwtService.generateRefreshToken(any())).thenReturn("rt");
         when(accessService.getAccessContext(any())).thenReturn(new UserAccessContextResponse());
         assertNotNull(service.login(req));
+    }
+
+    @Test
+    @DisplayName("login: el access token se genera con claims authorities y roles")
+    @SuppressWarnings("unchecked")
+    void testLogin_TokenClaimsIncludeAuthoritiesAndRoles() {
+        LoginRequest req = new LoginRequest(); req.setUsername("admin"); req.setPassword("p");
+
+        PermissionEntity perm = PermissionEntity.builder().code("APROBACIONES_ACCESO").build();
+        RoleEntity adminRole = RoleEntity.builder()
+                .code("ADMIN")
+                .permissions(new HashSet<>(Set.of(perm)))
+                .build();
+        UserEntity u = new UserEntity(); u.setUsername("admin"); u.setEnabled(true);
+        u.setRoles(new HashSet<>(Set.of(adminRole)));
+
+        when(repository.findByUsername("admin")).thenReturn(Optional.of(u));
+        when(jwtService.generateToken(anyMap(), any())).thenReturn("t");
+        when(jwtService.generateRefreshToken(any())).thenReturn("rt");
+        when(accessService.getAccessContext(any())).thenReturn(new UserAccessContextResponse());
+
+        service.login(req);
+
+        ArgumentCaptor<Map<String, Object>> claimsCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(jwtService).generateToken(claimsCaptor.capture(), any());
+
+        Map<String, Object> claims = claimsCaptor.getValue();
+        List<String> authorities = (List<String>) claims.get("authorities");
+        assertEquals(2, authorities.size());
+        assertTrue(authorities.contains("ROLE_ADMIN"));
+        assertTrue(authorities.contains("APROBACIONES_ACCESO"));
+
+        List<String> roles = (List<String>) claims.get("roles");
+        assertEquals(List.of("ADMIN"), roles);
+    }
+
+    @Test
+    @DisplayName("refresh: el nuevo access token también incluye claims authorities y roles")
+    @SuppressWarnings("unchecked")
+    void testRefresh_TokenClaimsIncludeAuthoritiesAndRoles() {
+        RefreshTokenRequest req = new RefreshTokenRequest(); req.setRefreshToken("rt");
+
+        RoleEntity userRole = RoleEntity.builder().code("USER").build();
+        UserEntity u = new UserEntity(); u.setUsername("u"); u.setEnabled(true);
+        u.setRoles(new HashSet<>(Set.of(userRole)));
+
+        when(jwtService.extractUsername("rt")).thenReturn("u");
+        when(repository.findByUsername("u")).thenReturn(Optional.of(u));
+        when(jwtService.isTokenValid(eq("rt"), any())).thenReturn(true);
+        when(jwtService.generateToken(anyMap(), any())).thenReturn("t");
+        when(jwtService.generateRefreshToken(any())).thenReturn("nrt");
+        when(accessService.getAccessContext(any())).thenReturn(new UserAccessContextResponse());
+
+        service.refresh(req);
+
+        ArgumentCaptor<Map<String, Object>> claimsCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(jwtService).generateToken(claimsCaptor.capture(), any());
+
+        Map<String, Object> claims = claimsCaptor.getValue();
+        List<String> authorities = (List<String>) claims.get("authorities");
+        assertEquals(List.of("ROLE_USER"), authorities);
+
+        List<String> roles = (List<String>) claims.get("roles");
+        assertEquals(List.of("USER"), roles);
     }
 
     @Test
@@ -124,7 +187,7 @@ class AuthServiceImplTest {
         when(jwtService.extractUsername("rt")).thenReturn("u");
         when(repository.findByUsername("u")).thenReturn(Optional.of(u));
         when(jwtService.isTokenValid(eq("rt"), any())).thenReturn(true);
-        when(jwtService.generateToken(any())).thenReturn("t");
+        when(jwtService.generateToken(anyMap(), any())).thenReturn("t");
         when(jwtService.generateRefreshToken(any())).thenReturn("nrt");
         when(accessService.getAccessContext(any())).thenReturn(new UserAccessContextResponse());
         assertNotNull(service.refresh(req));
