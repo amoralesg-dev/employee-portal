@@ -89,6 +89,17 @@ class RoleServiceImplTest {
         when(repository.existsByCode("R2")).thenReturn(true);
         assertThrows(BusinessException.class, () -> service.updateRole(1L, req));
     }
+
+    @Test
+    void testUpdateRole_CodeChangedAndFree() {
+        RoleRequest req = new RoleRequest(); req.setName("n"); req.setCode("R2");
+        RoleEntity ent = new RoleEntity(); ent.setCode("R1");
+        when(repository.findById(1L)).thenReturn(Optional.of(ent));
+        when(repository.existsByCode("R2")).thenReturn(false);
+        when(repository.save(any())).thenReturn(ent);
+        when(mapper.toResponse(any())).thenReturn(new RoleResponse());
+        assertNotNull(service.updateRole(1L, req));
+    }
     
     @Test
     void testDeleteRole_Found() {

@@ -1,5 +1,6 @@
 package com.rassini.employeeportal.service.impl;
 
+import com.rassini.employeeportal.dto.request.ChangePasswordRequest;
 import com.rassini.employeeportal.dto.request.LoginRequest;
 import com.rassini.employeeportal.dto.request.RefreshTokenRequest;
 import com.rassini.employeeportal.dto.request.ResetPasswordRequest;
@@ -209,5 +210,38 @@ class AuthServiceImplTest {
         when(repository.findByUsername("u")).thenReturn(Optional.of(u));
         when(jwtService.isTokenValid(eq("rt"), any())).thenReturn(false);
         assertThrows(RuntimeException.class, () -> service.refresh(req));
+    }
+
+    @Test
+    @DisplayName("changePassword: cambio exitoso limpia forcePasswordChange")
+    void testChangePassword_Success() {
+        ChangePasswordRequest req = new ChangePasswordRequest();
+        req.setCurrentPassword("old"); req.setNewPassword("new"); req.setConfirmPassword("new");
+        UserEntity u = new UserEntity(); u.setUsername("u"); u.setPasswordHash("x"); u.setForcePasswordChange(true);
+        when(repository.findByUsername("u")).thenReturn(Optional.of(u));
+        when(passwordEncoder.matches("old", "x")).thenReturn(true);
+        when(passwordEncoder.encode("new")).thenReturn("y");
+        service.changePassword("u", req);
+        verify(repository).save(u);
+        assertFalse(u.getForcePasswordChange());
+    }
+
+    @Test
+    @DisplayName("changePassword: confirmación distinta → IllegalArgumentException")
+    void testChangePassword_MismatchConfirm() {
+        ChangePasswordRequest req = new ChangePasswordRequest();
+        req.setCurrentPassword("old"); req.setNewPassword("new"); req.setConfirmPassword("other");
+        assertThrows(IllegalArgumentException.class, () -> service.changePassword("u", req));
+    }
+
+    @Test
+    @DisplayName("changePassword: contraseña actual incorrecta → IllegalArgumentException")
+    void testChangePassword_WrongCurrent() {
+        ChangePasswordRequest req = new ChangePasswordRequest();
+        req.setCurrentPassword("wrong"); req.setNewPassword("new"); req.setConfirmPassword("new");
+        UserEntity u = new UserEntity(); u.setUsername("u"); u.setPasswordHash("x");
+        when(repository.findByUsername("u")).thenReturn(Optional.of(u));
+        when(passwordEncoder.matches("wrong", "x")).thenReturn(false);
+        assertThrows(IllegalArgumentException.class, () -> service.changePassword("u", req));
     }
 }

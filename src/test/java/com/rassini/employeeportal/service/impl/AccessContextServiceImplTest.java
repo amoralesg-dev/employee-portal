@@ -2,18 +2,24 @@ package com.rassini.employeeportal.service.impl;
 
 import com.rassini.employeeportal.dto.response.MenuResponse;
 import com.rassini.employeeportal.dto.response.UserAccessContextResponse;
+import com.rassini.employeeportal.entity.BusinessUnitEntity;
 import com.rassini.employeeportal.entity.MenuEntity;
 import com.rassini.employeeportal.entity.PermissionEntity;
 import com.rassini.employeeportal.entity.RoleEntity;
 import com.rassini.employeeportal.entity.UserEntity;
 import com.rassini.employeeportal.exception.ResourceNotFoundException;
+import com.rassini.employeeportal.mapper.BusinessUnitMapper;
+import com.rassini.employeeportal.repository.BusinessUnitRepository;
 import com.rassini.employeeportal.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.mockito.Spy;
 
+import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -23,6 +29,8 @@ import static org.mockito.Mockito.*;
 class AccessContextServiceImplTest {
     @InjectMocks private AccessContextServiceImpl service;
     @Mock private UserRepository userRepository;
+    @Mock private BusinessUnitRepository businessUnitRepository;
+    @Spy private BusinessUnitMapper businessUnitMapper = new BusinessUnitMapper();
 
     @BeforeEach
     void setUp() { MockitoAnnotations.openMocks(this); }
@@ -94,5 +102,32 @@ class AccessContextServiceImplTest {
         assertEquals(2, m10Response.getChildren().size());
         assertEquals("M20", m10Response.getChildren().get(0).getCode()); // orderIndex 1
         assertEquals("M21", m10Response.getChildren().get(1).getCode()); // orderIndex null (last)
+    }
+
+    @Test
+    void testGetAccessContext_GlobalUser() {
+        UserEntity user = new UserEntity(); user.setId(1L); user.setUsername("u"); user.setHasAllBusinessUnits(true);
+        BusinessUnitEntity bu = BusinessUnitEntity.builder().id(1L).code("BU1").name("BU One").build();
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(businessUnitRepository.findByEnabledTrue()).thenReturn(List.of(bu));
+
+        UserAccessContextResponse res = service.getAccessContext(1L);
+        assertTrue(res.getHasAllBusinessUnits());
+        assertEquals(1, res.getBusinessUnits().size());
+        assertEquals("BU1", res.getBusinessUnits().get(0).getCode());
+    }
+
+    @Test
+    void testGetAccessContext_RestrictedWithMixedBusinessUnits() {
+        UserEntity user = new UserEntity(); user.setId(1L); user.setUsername("u"); user.setHasAllBusinessUnits(false);
+        BusinessUnitEntity enabled = BusinessUnitEntity.builder().id(1L).code("BU1").name("BU One").build();
+        BusinessUnitEntity disabled = BusinessUnitEntity.builder().id(2L).code("BU2").name("BU Two").enabled(false).build();
+        user.setBusinessUnits(new HashSet<>(Set.of(enabled, disabled)));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        UserAccessContextResponse res = service.getAccessContext(1L);
+        assertFalse(res.getHasAllBusinessUnits());
+        assertEquals(1, res.getBusinessUnits().size());
+        assertEquals("BU1", res.getBusinessUnits().get(0).getCode());
     }
 }

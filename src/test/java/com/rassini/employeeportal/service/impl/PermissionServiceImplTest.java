@@ -89,6 +89,17 @@ class PermissionServiceImplTest {
         when(repository.existsByCode("P2")).thenReturn(true);
         assertThrows(BusinessException.class, () -> service.updatePermission(1L, req));
     }
+
+    @Test
+    void testUpdatePermission_CodeChangedAndFree() {
+        PermissionRequest req = new PermissionRequest(); req.setDescription("d"); req.setCode("P2");
+        PermissionEntity ent = new PermissionEntity(); ent.setCode("P1");
+        when(repository.findById(1L)).thenReturn(Optional.of(ent));
+        when(repository.existsByCode("P2")).thenReturn(false);
+        when(repository.save(any())).thenReturn(ent);
+        when(mapper.toResponse(any())).thenReturn(new PermissionResponse());
+        assertNotNull(service.updatePermission(1L, req));
+    }
     
     @Test
     void testDeletePermission_Found() {

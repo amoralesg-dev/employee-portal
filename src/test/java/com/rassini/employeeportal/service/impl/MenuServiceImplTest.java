@@ -2,10 +2,12 @@ package com.rassini.employeeportal.service.impl;
 
 import com.rassini.employeeportal.dto.request.MenuRequest;
 import com.rassini.employeeportal.dto.response.MenuResponse;
+import com.rassini.employeeportal.entity.ApplicationEntity;
 import com.rassini.employeeportal.entity.MenuEntity;
 import com.rassini.employeeportal.exception.BusinessException;
 import com.rassini.employeeportal.exception.ResourceNotFoundException;
 import com.rassini.employeeportal.mapper.MenuMapper;
+import com.rassini.employeeportal.repository.ApplicationRepository;
 import com.rassini.employeeportal.repository.MenuRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,10 +24,14 @@ import static org.mockito.Mockito.*;
 class MenuServiceImplTest {
     @InjectMocks private MenuServiceImpl service;
     @Mock private MenuRepository repository;
+    @Mock private ApplicationRepository applicationRepository;
     @Mock private MenuMapper mapper;
 
     @BeforeEach
-    void setUp() { MockitoAnnotations.openMocks(this); }
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+        when(applicationRepository.findById(anyLong())).thenReturn(Optional.of(new ApplicationEntity()));
+    }
 
     @Test
     void testGetMenus() {
@@ -36,7 +42,7 @@ class MenuServiceImplTest {
 
     @Test
     void testCreateMenu_Success() {
-        MenuRequest req = new MenuRequest(); req.setCode("M1"); req.setParentId(null);
+        MenuRequest req = new MenuRequest(); req.setCode("M1"); req.setApplicationId(1L); req.setParentId(null);
         when(repository.findByCode("M1")).thenReturn(Optional.empty());
         when(mapper.toEntity(any())).thenReturn(new MenuEntity());
         when(repository.save(any())).thenReturn(new MenuEntity());
@@ -46,7 +52,7 @@ class MenuServiceImplTest {
     
     @Test
     void testCreateMenu_ParentExists() {
-        MenuRequest req = new MenuRequest(); req.setCode("M1"); req.setParentId(2L);
+        MenuRequest req = new MenuRequest(); req.setCode("M1"); req.setApplicationId(1L); req.setParentId(2L);
         when(repository.findByCode("M1")).thenReturn(Optional.empty());
         when(mapper.toEntity(any())).thenReturn(new MenuEntity());
         when(repository.findById(2L)).thenReturn(Optional.of(new MenuEntity()));
@@ -64,7 +70,7 @@ class MenuServiceImplTest {
 
     @Test
     void testCreateMenu_ParentNotFound() {
-        MenuRequest req = new MenuRequest(); req.setCode("M1"); req.setParentId(2L);
+        MenuRequest req = new MenuRequest(); req.setCode("M1"); req.setApplicationId(1L); req.setParentId(2L);
         when(repository.findByCode("M1")).thenReturn(Optional.empty());
         when(mapper.toEntity(any())).thenReturn(new MenuEntity());
         when(repository.findById(2L)).thenReturn(Optional.empty());
@@ -86,7 +92,7 @@ class MenuServiceImplTest {
     
     @Test
     void testUpdateMenu_Success() {
-        MenuRequest req = new MenuRequest(); req.setLabel("l"); req.setCode("M1"); req.setParentId(null);
+        MenuRequest req = new MenuRequest(); req.setLabel("l"); req.setCode("M1"); req.setApplicationId(1L); req.setParentId(null);
         MenuEntity ent = new MenuEntity(); ent.setLabel("x"); ent.setCode("M1");
         when(repository.findById(1L)).thenReturn(Optional.of(ent));
         when(repository.save(any())).thenReturn(ent);
@@ -102,10 +108,21 @@ class MenuServiceImplTest {
         when(repository.findByCode("M2")).thenReturn(Optional.of(new MenuEntity()));
         assertThrows(BusinessException.class, () -> service.updateMenu(1L, req));
     }
+
+    @Test
+    void testUpdateMenu_CodeChangedAndFree() {
+        MenuRequest req = new MenuRequest(); req.setLabel("l"); req.setCode("M2"); req.setApplicationId(1L); req.setParentId(null);
+        MenuEntity ent = new MenuEntity(); ent.setLabel("x"); ent.setCode("M1");
+        when(repository.findById(1L)).thenReturn(Optional.of(ent));
+        when(repository.findByCode("M2")).thenReturn(Optional.empty());
+        when(repository.save(any())).thenReturn(ent);
+        when(mapper.toResponse(any())).thenReturn(new MenuResponse());
+        assertNotNull(service.updateMenu(1L, req));
+    }
     
     @Test
     void testUpdateMenu_ParentSuccess() {
-        MenuRequest req = new MenuRequest(); req.setLabel("l"); req.setCode("M1"); req.setParentId(2L);
+        MenuRequest req = new MenuRequest(); req.setLabel("l"); req.setCode("M1"); req.setApplicationId(1L); req.setParentId(2L);
         MenuEntity ent = new MenuEntity(); ent.setLabel("x"); ent.setCode("M1");
         when(repository.findById(1L)).thenReturn(Optional.of(ent));
         when(repository.findById(2L)).thenReturn(Optional.of(new MenuEntity()));
@@ -116,7 +133,7 @@ class MenuServiceImplTest {
     
     @Test
     void testUpdateMenu_SameParent() {
-        MenuRequest req = new MenuRequest(); req.setCode("M1"); req.setParentId(1L);
+        MenuRequest req = new MenuRequest(); req.setCode("M1"); req.setApplicationId(1L); req.setParentId(1L);
         MenuEntity ent = new MenuEntity(); ent.setCode("M1");
         when(repository.findById(1L)).thenReturn(Optional.of(ent));
         assertThrows(BusinessException.class, () -> service.updateMenu(1L, req));
@@ -124,7 +141,7 @@ class MenuServiceImplTest {
 
     @Test
     void testUpdateMenu_ParentNotFound() {
-        MenuRequest req = new MenuRequest(); req.setCode("M1"); req.setParentId(2L);
+        MenuRequest req = new MenuRequest(); req.setCode("M1"); req.setApplicationId(1L); req.setParentId(2L);
         MenuEntity ent = new MenuEntity(); ent.setCode("M1");
         when(repository.findById(1L)).thenReturn(Optional.of(ent));
         when(repository.findById(2L)).thenReturn(Optional.empty());

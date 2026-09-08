@@ -3,19 +3,25 @@ package com.rassini.employeeportal.service.impl;
 import com.rassini.employeeportal.dto.request.BusinessUnitRequest;
 import com.rassini.employeeportal.dto.response.BusinessUnitResponse;
 import com.rassini.employeeportal.entity.BusinessUnitEntity;
+import com.rassini.employeeportal.entity.UserEntity;
 import com.rassini.employeeportal.exception.BusinessException;
 import com.rassini.employeeportal.exception.ResourceNotFoundException;
+import com.rassini.employeeportal.mapper.BusinessUnitMapper;
+import com.rassini.employeeportal.mapper.UserMapper;
 import com.rassini.employeeportal.repository.BusinessUnitRepository;
+import com.rassini.employeeportal.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.mockito.Spy;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -25,6 +31,15 @@ class BusinessUnitServiceImplTest {
 
     @Mock
     private BusinessUnitRepository businessUnitRepository;
+
+    @Mock
+    private UserRepository userRepository;
+
+    @Mock
+    private UserMapper userMapper;
+
+    @Spy
+    private BusinessUnitMapper businessUnitMapper = new BusinessUnitMapper();
 
     @InjectMocks
     private BusinessUnitServiceImpl businessUnitService;
@@ -199,5 +214,91 @@ class BusinessUnitServiceImplTest {
     void testDeleteBusinessUnitWithChildrenError() {
         when(businessUnitRepository.findById(1L)).thenReturn(Optional.of(rootEntity));
         assertThrows(BusinessException.class, () -> businessUnitService.deleteBusinessUnit(1L));
+    }
+
+    @Test
+    void testDeleteBusinessUnitWithUsersError() {
+        BusinessUnitEntity occupied = BusinessUnitEntity.builder()
+                .id(5L)
+                .code("OCC")
+                .name("Occupied Unit")
+                .children(new HashSet<>())
+                .users(new HashSet<>(Set.of(new UserEntity())))
+                .build();
+
+        when(businessUnitRepository.findById(5L)).thenReturn(Optional.of(occupied));
+        assertThrows(BusinessException.class, () -> businessUnitService.deleteBusinessUnit(5L));
+    }
+
+    @Test
+    void testUpdateStatus_Enable() {
+        when(businessUnitRepository.findById(1L)).thenReturn(Optional.of(rootEntity));
+        when(businessUnitRepository.save(any(BusinessUnitEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        BusinessUnitResponse response = businessUnitService.updateStatus(1L, true);
+        assertNotNull(response);
+        assertTrue(response.getEnabled());
+    }
+
+    @Test
+    void testUpdateStatus_Disable() {
+        when(businessUnitRepository.findById(1L)).thenReturn(Optional.of(rootEntity));
+        when(businessUnitRepository.save(any(BusinessUnitEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        BusinessUnitResponse response = businessUnitService.updateStatus(1L, false);
+        assertNotNull(response);
+        assertFalse(response.getEnabled());
+    }
+
+    @Test
+    void testReplaceBusinessUnitUsers_Success() {
+        UserEntity old1 = new UserEntity(); old1.setId(1L); old1.setUsername("old1"); old1.setHasAllBusinessUnits(false);
+        UserEntity old2 = new UserEntity(); old2.setId(2L); old2.setUsername("old2"); old2.setHasAllBusinessUnits(false);
+        UserEntity newUser = new UserEntity(); newUser.setId(3L); newUser.setUsername("new3"); newUser.setHasAllBusinessUnits(false);
+
+        old1.getBusinessUnits().add(rootEntity);
+        old2.getBusinessUnits().add(rootEntity);
+        rootEntity.getUsers().add(old1);
+        rootEntity.getUsers().add(old2);
+
+        Set<Long> userIds = new HashSet<>(Set.of(2L, 3L));
+        when(businessUnitRepository.findById(1L)).thenReturn(Optional.of(rootEntity));
+        when(userRepository.findAllById(userIds)).thenReturn(List.of(old2, newUser));
+
+        businessUnitService.replaceBusinessUnitUsers(1L, userIds);
+
+        assertFalse(old1.getBusinessUnits().contains(rootEntity));
+        assertTrue(old2.getBusinessUnits().contains(rootEntity));
+        assertTrue(newUser.getBusinessUnits().contains(rootEntity));
+        verify(userRepository, times(3)).save(any(UserEntity.class));
+    }
+
+    @Test
+    void testReplaceBusinessUnitUsers_DisabledBusinessUnitError() {
+        BusinessUnitEntity disabled = BusinessUnitEntity.builder()
+                .id(6L)
+                .code("DIS")
+                .name("Disabled Unit")
+                .enabled(false)
+                .children(new HashSet<>())
+                .build();
+
+        when(businessUnitRepository.findById(6L)).thenReturn(Optional.of(disabled));
+        assertThrows(BusinessException.class, () -> businessUnitService.replaceBusinessUnitUsers(6L, Set.of(1L)));
+    }
+
+    @Test
+    void testReplaceBusinessUnitUsers_UserNotFoundError() {
+        when(businessUnitRepository.findById(1L)).thenReturn(Optional.of(rootEntity));
+        when(userRepository.findAllById(Set.of(99L))).thenReturn(List.of());
+        assertThrows(BusinessException.class, () -> businessUnitService.replaceBusinessUnitUsers(1L, Set.of(99L)));
+    }
+
+    @Test
+    void testReplaceBusinessUnitUsers_GlobalUserError() {
+        UserEntity global = new UserEntity(); global.setId(1L); global.setUsername("global"); global.setHasAllBusinessUnits(true);
+        when(businessUnitRepository.findById(1L)).thenReturn(Optional.of(rootEntity));
+        when(userRepository.findAllById(Set.of(1L))).thenReturn(List.of(global));
+        assertThrows(BusinessException.class, () -> businessUnitService.replaceBusinessUnitUsers(1L, Set.of(1L)));
     }
 }

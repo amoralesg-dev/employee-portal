@@ -6,12 +6,15 @@ import com.rassini.employeeportal.dto.request.UserRequest;
 import com.rassini.employeeportal.dto.request.UserUpdateRequest;
 import com.rassini.employeeportal.dto.response.RoleResponse;
 import com.rassini.employeeportal.dto.response.UserResponse;
+import com.rassini.employeeportal.entity.BusinessUnitEntity;
 import com.rassini.employeeportal.entity.RoleEntity;
 import com.rassini.employeeportal.entity.UserEntity;
 import com.rassini.employeeportal.exception.BusinessException;
 import com.rassini.employeeportal.exception.ResourceNotFoundException;
+import com.rassini.employeeportal.mapper.BusinessUnitMapper;
 import com.rassini.employeeportal.mapper.RoleMapper;
 import com.rassini.employeeportal.mapper.UserMapper;
+import com.rassini.employeeportal.repository.BusinessUnitRepository;
 import com.rassini.employeeportal.repository.RoleRepository;
 import com.rassini.employeeportal.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,8 +35,10 @@ class UserServiceImplTest {
     @InjectMocks private UserServiceImpl service;
     @Mock private UserRepository repository;
     @Mock private RoleRepository roleRepository;
+    @Mock private BusinessUnitRepository businessUnitRepository;
     @Mock private UserMapper mapper;
     @Mock private RoleMapper roleMapper;
+    @Mock private BusinessUnitMapper businessUnitMapper;
     @Mock private PasswordEncoder encoder;
 
     @BeforeEach
@@ -49,6 +54,7 @@ class UserServiceImplTest {
     @Test
     void testCreateUser_Success() {
         UserRequest req = new UserRequest(); req.setUsername("U1"); req.setEmail("e@e.com");
+        req.setHasAllBusinessUnits(true);
         when(repository.existsByUsername("U1")).thenReturn(false);
         when(repository.existsByEmail("e@e.com")).thenReturn(false);
         when(mapper.toEntity(any())).thenReturn(new UserEntity());
@@ -189,5 +195,85 @@ class UserServiceImplTest {
         when(repository.findById(1L)).thenReturn(Optional.of(u));
         when(roleRepository.findAllById(Set.of(1L))).thenReturn(List.of());
         assertThrows(BusinessException.class, () -> service.replaceUserRoles(1L, Set.of(1L)));
+    }
+
+    private BusinessUnitEntity enabledBu(Long id, String code) {
+        return BusinessUnitEntity.builder().id(id).code(code).name(code).build();
+    }
+
+    @Test
+    void testCreateUser_NoBusinessUnitThrows() {
+        UserRequest req = new UserRequest(); req.setUsername("U1"); req.setEmail("e@e.com");
+        when(repository.existsByUsername("U1")).thenReturn(false);
+        when(repository.existsByEmail("e@e.com")).thenReturn(false);
+        when(mapper.toEntity(any())).thenReturn(new UserEntity());
+        assertThrows(BusinessException.class, () -> service.createUser(req));
+    }
+
+    @Test
+    void testCreateUser_WithBusinessUnitSuccess() {
+        UserRequest req = new UserRequest(); req.setUsername("U1"); req.setEmail("e@e.com");
+        req.setBusinessUnitIds(Set.of(1L));
+        when(repository.existsByUsername("U1")).thenReturn(false);
+        when(repository.existsByEmail("e@e.com")).thenReturn(false);
+        when(mapper.toEntity(any())).thenReturn(new UserEntity());
+        when(businessUnitRepository.findAllById(Set.of(1L))).thenReturn(List.of(enabledBu(1L, "BU1")));
+        when(repository.save(any())).thenReturn(new UserEntity());
+        when(mapper.toResponse(any())).thenReturn(new UserResponse());
+        assertNotNull(service.createUser(req));
+    }
+
+    @Test
+    void testCreateUser_BusinessUnitNotFoundThrows() {
+        UserRequest req = new UserRequest(); req.setUsername("U1"); req.setEmail("e@e.com");
+        req.setBusinessUnitIds(Set.of(99L));
+        when(repository.existsByUsername("U1")).thenReturn(false);
+        when(repository.existsByEmail("e@e.com")).thenReturn(false);
+        when(mapper.toEntity(any())).thenReturn(new UserEntity());
+        when(businessUnitRepository.findAllById(Set.of(99L))).thenReturn(List.of());
+        assertThrows(BusinessException.class, () -> service.createUser(req));
+    }
+
+    @Test
+    void testCreateUser_BusinessUnitDisabledThrows() {
+        UserRequest req = new UserRequest(); req.setUsername("U1"); req.setEmail("e@e.com");
+        req.setBusinessUnitIds(Set.of(1L));
+        BusinessUnitEntity disabled = BusinessUnitEntity.builder().id(1L).code("BU1").name("BU1").enabled(false).build();
+        when(repository.existsByUsername("U1")).thenReturn(false);
+        when(repository.existsByEmail("e@e.com")).thenReturn(false);
+        when(mapper.toEntity(any())).thenReturn(new UserEntity());
+        when(businessUnitRepository.findAllById(Set.of(1L))).thenReturn(List.of(disabled));
+        assertThrows(BusinessException.class, () -> service.createUser(req));
+    }
+
+    @Test
+    void testUpdateUser_ToGlobalAccessClearsBusinessUnits() {
+        UserUpdateRequest req = new UserUpdateRequest(); req.setUsername("u1"); req.setEmail("e@e.com");
+        req.setHasAllBusinessUnits(true);
+        UserEntity ent = new UserEntity(); ent.setUsername("u1"); ent.setEmail("e@e.com");
+        ent.getBusinessUnits().add(enabledBu(1L, "BU1"));
+        when(repository.findById(1L)).thenReturn(Optional.of(ent));
+        when(repository.save(any())).thenReturn(ent);
+        when(mapper.toResponse(any())).thenReturn(new UserResponse());
+        assertNotNull(service.updateUser(1L, req));
+        assertTrue(ent.getHasAllBusinessUnits());
+        assertTrue(ent.getBusinessUnits().isEmpty());
+    }
+
+    @Test
+    void testUpdateUser_WithBusinessUnitIdsSuccess() {
+        UserUpdateRequest req = new UserUpdateRequest(); req.setUsername("u2"); req.setEmail("e2@e.com");
+        req.setBusinessUnitIds(Set.of(1L));
+        UserEntity ent = new UserEntity(); ent.setUsername("u1"); ent.setEmail("e1@e.com");
+        when(repository.findById(1L)).thenReturn(Optional.of(ent));
+        when(repository.existsByUsername("u2")).thenReturn(false);
+        when(repository.existsByEmail("e2@e.com")).thenReturn(false);
+        when(businessUnitRepository.findAllById(Set.of(1L))).thenReturn(List.of(enabledBu(1L, "BU1")));
+        when(repository.save(any())).thenReturn(ent);
+        when(mapper.toResponse(any())).thenReturn(new UserResponse());
+        assertNotNull(service.updateUser(1L, req));
+        assertEquals("u2", ent.getUsername());
+        assertEquals("e2@e.com", ent.getEmail());
+        assertEquals(1, ent.getBusinessUnits().size());
     }
 }

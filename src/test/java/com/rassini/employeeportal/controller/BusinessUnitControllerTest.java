@@ -47,7 +47,7 @@ public class BusinessUnitControllerTest {
         mockMvc.perform(get("/api/v1/business-units")
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].code").value("BU1"));
+                .andExpect(jsonPath("$.data[0].code").value("BU1"));
     }
 
     @Test
@@ -62,6 +62,6 @@ public class BusinessUnitControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.code").value("BU2"));
+                .andExpect(jsonPath("$.data.code").value("BU2"));
     }
 }
