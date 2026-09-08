@@ -141,6 +141,36 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 
+    @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
+    public ResponseEntity<ApiErrorResponse> handleResponseStatusException(org.springframework.web.server.ResponseStatusException ex) {
+        log.warn("[BUSINESS] ResponseStatusException: {}", ex.getReason());
+        return buildResponse((HttpStatus) ex.getStatusCode(), ex.getReason());
+    }
+
+    @ExceptionHandler(io.jsonwebtoken.ExpiredJwtException.class)
+    public ResponseEntity<ApiErrorResponse> handleExpiredJwtException(io.jsonwebtoken.ExpiredJwtException ex) {
+        log.warn("[AUTH] ExpiredJwtException: {}", ex.getMessage());
+        ApiErrorResponse body = ApiErrorResponse.builder()
+                .status(HttpStatus.UNAUTHORIZED.value())
+                .code("MFA_SESSION_EXPIRED")
+                .message("La sesión de verificación expiró. Inicia sesión nuevamente.")
+                .timestamp(LocalDateTime.now())
+                .build();
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
+    }
+
+    @ExceptionHandler(InvalidMfaSessionException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidMfaSessionException(InvalidMfaSessionException ex) {
+        log.warn("[AUTH] InvalidMfaSessionException: {}", ex.getMessage());
+        ApiErrorResponse body = ApiErrorResponse.builder()
+                .status(HttpStatus.UNAUTHORIZED.value())
+                .code(ex.getCode())
+                .message(ex.getMessage())
+                .timestamp(LocalDateTime.now())
+                .build();
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
+    }
+
     /**
      * {@link Exception} fallback → 500
      * No expone stacktrace ni detalles internos al cliente.

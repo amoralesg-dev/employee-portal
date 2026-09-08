@@ -9,6 +9,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.Set;
+
 /**
  * DTO de solicitud para crear un nuevo usuario.
  */
@@ -31,4 +33,7 @@ public class UserRequest {
     @NotBlank(message = "La contraseña es obligatoria")
     @Size(min = 8, max = 255, message = "La contraseña debe tener entre 8 y 255 caracteres")
     private String password;
+
+    private Boolean hasAllBusinessUnits;
+    private Set<Long> businessUnitIds;
 }

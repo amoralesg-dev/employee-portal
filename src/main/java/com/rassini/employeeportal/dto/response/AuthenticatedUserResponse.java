@@ -15,4 +15,6 @@ public class AuthenticatedUserResponse {
     private String email;
     private Boolean enabled;
     private Boolean forcePasswordChange;
+    private Boolean mfaEnabled;
+    private Boolean mfaRequired;
 }

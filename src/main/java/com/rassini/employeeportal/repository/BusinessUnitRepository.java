@@ -11,4 +11,5 @@ import java.util.Optional;
 public interface BusinessUnitRepository extends JpaRepository<BusinessUnitEntity, Long> {
     Optional<BusinessUnitEntity> findByCode(String code);
     List<BusinessUnitEntity> findByParentIsNull();
+    List<BusinessUnitEntity> findByEnabledTrue();
 }

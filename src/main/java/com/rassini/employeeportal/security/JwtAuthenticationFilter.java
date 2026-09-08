@@ -46,7 +46,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         jwt = authHeader.substring(7);
         
         try {
-            username = jwtService.extractUsername(jwt);
+            io.jsonwebtoken.Claims claims = jwtService.extractAllClaims(jwt);
+            String tokenType = claims.get("token_type", String.class);
+            Boolean mfaPending = claims.get("mfa_pending", Boolean.class);
+
+            if ("MFA_PENDING".equals(tokenType) || Boolean.TRUE.equals(mfaPending)) {
+                response.sendError(HttpServletResponse.SC_FORBIDDEN, "Acceso Denegado: Los tokens MFA_PENDING no pueden usarse como Bearer Token.");
+                return;
+            }
+
+            username = claims.getSubject();
             
             // Si hay un username y no hay autenticación actual en el contexto
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {

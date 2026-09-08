@@ -24,4 +24,7 @@ public class PermissionRequest {
 
     @Size(max = 255, message = "La descripción no puede exceder 255 caracteres")
     private String description;
+    
+    @jakarta.validation.constraints.NotNull(message = "El ID de la aplicación es obligatorio")
+    private Long applicationId;
 }

@@ -22,6 +22,7 @@ import java.util.List;
 public class ApiErrorResponse {
 
     private int status;
+    private String code;
     private String message;
     private LocalDateTime timestamp;
     private List<FieldError> errors;

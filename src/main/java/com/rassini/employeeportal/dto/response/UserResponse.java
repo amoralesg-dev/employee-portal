@@ -30,4 +30,11 @@ public class UserResponse {
 
     /** Roles asignados al usuario (sin relaciones anidadas profundas). */
     private List<RoleResponse> roles;
+
+    private List<BusinessUnitResponse> businessUnits;
+    private Boolean hasAllBusinessUnits;
+    
+    private Boolean mfaEnabled;
+    private Boolean mfaSecretExists;
+    private Boolean mfaRequired;
 }

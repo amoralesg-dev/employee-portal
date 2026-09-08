@@ -12,6 +12,8 @@ import com.rassini.employeeportal.mapper.PermissionMapper;
 import com.rassini.employeeportal.repository.MenuRepository;
 import com.rassini.employeeportal.repository.PermissionRepository;
 import com.rassini.employeeportal.service.PermissionService;
+import com.rassini.employeeportal.repository.ApplicationRepository;
+import com.rassini.employeeportal.entity.ApplicationEntity;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +33,7 @@ public class PermissionServiceImpl implements PermissionService {
 
     private final PermissionRepository permissionRepository;
     private final MenuRepository menuRepository;
+    private final ApplicationRepository applicationRepository;
     private final PermissionMapper permissionMapper;
     private final MenuMapper menuMapper;
 
@@ -55,7 +58,11 @@ public class PermissionServiceImpl implements PermissionService {
             throw new BusinessException("El código de permiso '" + request.getCode() + "' ya existe");
         }
 
+        ApplicationEntity application = applicationRepository.findById(request.getApplicationId())
+                .orElseThrow(() -> new ResourceNotFoundException("Aplicación", "id", request.getApplicationId()));
+
         PermissionEntity entity = permissionMapper.toEntity(request);
+        entity.setApplication(application);
         entity.setCreatedAt(LocalDateTime.now());
 
         PermissionEntity saved = permissionRepository.save(entity);
@@ -70,8 +77,12 @@ public class PermissionServiceImpl implements PermissionService {
             throw new BusinessException("El código de permiso '" + request.getCode() + "' ya existe");
         }
 
+        ApplicationEntity application = applicationRepository.findById(request.getApplicationId())
+                .orElseThrow(() -> new ResourceNotFoundException("Aplicación", "id", request.getApplicationId()));
+
         permission.setCode(request.getCode());
         permission.setDescription(request.getDescription());
+        permission.setApplication(application);
 
         PermissionEntity saved = permissionRepository.save(permission);
         return permissionMapper.toResponse(saved);
