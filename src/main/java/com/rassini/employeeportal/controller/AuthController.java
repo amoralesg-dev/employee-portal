@@ -19,15 +19,36 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
+    private final org.springframework.security.web.context.SecurityContextRepository securityContextRepository;
+    private final org.springframework.security.core.userdetails.UserDetailsService userDetailsService;
 
     @PostMapping("/login")
     @Operation(summary = "Login de usuario")
-    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request,
+                                   jakarta.servlet.http.HttpServletRequest httpRequest,
+                                   jakarta.servlet.http.HttpServletResponse httpResponse) {
         com.rassini.employeeportal.dto.auth.LoginResult result = authService.login(request);
         if (result.isMfaRequired()) {
-            return ResponseEntity.status(org.springframework.http.HttpStatus.ACCEPTED).body(result.getPendingResponse());
+            return ResponseEntity.status(org.springframework.http.HttpStatus.ACCEPTED)
+                    .header("X-Deprecation-Warning", "HMAC login is deprecated. Please migrate to corporate SSO via OAuth2/OIDC (/oauth2/authorize).")
+                    .body(result.getPendingResponse());
         }
-        return ResponseEntity.ok(result.getSuccessResponse());
+
+        // Bridge: Guardar SecurityContext en la HttpSession para SSO con OAuth2/OIDC
+        org.springframework.security.core.userdetails.UserDetails userDetails = 
+                userDetailsService.loadUserByUsername(request.getUsername());
+        org.springframework.security.authentication.UsernamePasswordAuthenticationToken authToken =
+                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                        userDetails, null, userDetails.getAuthorities());
+        org.springframework.security.core.context.SecurityContext context = 
+                org.springframework.security.core.context.SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(authToken);
+        org.springframework.security.core.context.SecurityContextHolder.setContext(context);
+        securityContextRepository.saveContext(context, httpRequest, httpResponse);
+
+        return ResponseEntity.ok()
+                .header("X-Deprecation-Warning", "HMAC login is deprecated. Please migrate to corporate SSO via OAuth2/OIDC (/oauth2/authorize).")
+                .body(result.getSuccessResponse());
     }
 
     @GetMapping("/me")
@@ -83,8 +104,24 @@ public class AuthController {
     @PostMapping("/mfa/verify")
     @Operation(summary = "Verificar MFA", description = "Verifica el codigo de MFA durante el login y retorna los tokens definitivos")
     public ResponseEntity<LoginResponse> verifyMfa(
-            @Valid @RequestBody com.rassini.employeeportal.dto.mfa.MfaVerifyRequest request) {
-        return ResponseEntity.ok(authService.verifyMfa(request));
+            @Valid @RequestBody com.rassini.employeeportal.dto.mfa.MfaVerifyRequest request,
+            jakarta.servlet.http.HttpServletRequest httpRequest,
+            jakarta.servlet.http.HttpServletResponse httpResponse) {
+        LoginResponse response = authService.verifyMfa(request);
+
+        // Bridge: Guardar SecurityContext en la HttpSession para SSO con OAuth2/OIDC
+        org.springframework.security.core.userdetails.UserDetails userDetails = 
+                userDetailsService.loadUserByUsername(response.getUser().getUsername());
+        org.springframework.security.authentication.UsernamePasswordAuthenticationToken authToken =
+                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                        userDetails, null, userDetails.getAuthorities());
+        org.springframework.security.core.context.SecurityContext context = 
+                org.springframework.security.core.context.SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(authToken);
+        org.springframework.security.core.context.SecurityContextHolder.setContext(context);
+        securityContextRepository.saveContext(context, httpRequest, httpResponse);
+
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/mfa/disable")

@@ -34,6 +34,19 @@ public class ApplicationEntity {
     @Builder.Default
     private Boolean active = true;
 
+    @Column(name = "client_id", length = 100, unique = true)
+    private String clientId;
+
+    @Column(name = "client_secret", length = 255)
+    private String clientSecret;
+
+    @Column(name = "redirect_uri", length = 500)
+    private String redirectUri;
+
+    @Column(name = "is_internal", nullable = false)
+    @Builder.Default
+    private Boolean isInternal = true;
+
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 

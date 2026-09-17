@@ -1,5 +1,8 @@
 package com.rassini.employeeportal.dto.response;
 
+import com.rassini.employeeportal.entity.AppType;
+import com.rassini.employeeportal.entity.AuthType;
+import com.rassini.employeeportal.entity.TargetType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -26,6 +29,26 @@ public class MenuResponse {
     private String route;
     private String icon;
     private Integer orderIndex;
+
+    @Builder.Default
+    private TargetType targetType = TargetType.INTERNO;
+
+    private String externalUrl;
+
+    @Builder.Default
+    private Boolean openInNewTab = false;
+
+    @Builder.Default
+    private AppType appType = AppType.INTERNA;
+
+    @Builder.Default
+    private AuthType authType = AuthType.NONE;
+
+    /** URL final resuelta con parámetros de contexto no sensibles. */
+    private String resolvedUrl;
+
+    /** Parámetros de URL configurados. */
+    private List<MenuParameterResponse> parameters;
 
     /** ID del menú padre; null si es menú raíz. */
     private Long parentId;

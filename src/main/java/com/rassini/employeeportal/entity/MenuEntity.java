@@ -43,6 +43,28 @@ public class MenuEntity {
     @Column(name = "order_index")
     private Integer orderIndex;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "target_type", length = 20, nullable = false)
+    @Builder.Default
+    private TargetType targetType = TargetType.INTERNO;
+
+    @Column(name = "external_url", length = 500)
+    private String externalUrl;
+
+    @Column(name = "open_in_new_tab", nullable = false)
+    @Builder.Default
+    private Boolean openInNewTab = false;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "app_type", length = 30, nullable = false)
+    @Builder.Default
+    private AppType appType = AppType.INTERNA;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "auth_type", length = 30, nullable = false)
+    @Builder.Default
+    private AuthType authType = AuthType.NONE;
+
     // ─── Self-reference jerárquica ────────────────────────────────────────────
 
     /** Menú padre (puede ser null si es raíz). Mapea a {@code parent_id}. */
@@ -55,6 +77,12 @@ public class MenuEntity {
     @OrderBy("orderIndex ASC")
     @Builder.Default
     private Set<MenuEntity> children = new HashSet<>();
+
+    // ─── Parámetros de contexto ───────────────────────────────────────────────
+
+    @OneToMany(mappedBy = "menu", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Builder.Default
+    private Set<MenuParameterEntity> parameters = new HashSet<>();
 
     // ─── Relaciones ───────────────────────────────────────────────────────────
 

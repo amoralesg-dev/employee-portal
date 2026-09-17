@@ -5,6 +5,7 @@ import com.rassini.employeeportal.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.core.env.Environment;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -36,7 +37,8 @@ public class SecurityConfig {
     private final Environment environment;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    @Order(2)
+    public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(AbstractHttpConfigurer::disable)
@@ -51,19 +53,27 @@ public class SecurityConfig {
                     "/swagger-ui/**",
                     "/swagger-ui.html",
                     "/v3/api-docs/**",
-                    "/v3/api-docs"
+                    "/v3/api-docs",
+                    "/oauth2/**",
+                    "/.well-known/**",
+                    "/connect/**"
                 ).permitAll()
                 .requestMatchers(
                     "/api/v1/users/**",
                     "/api/v1/roles/**",
                     "/api/v1/permissions/**",
                     "/api/v1/menus/**",
+                    "/api/v1/placeholders/**",
+                    "/api/v1/oauth-clients/**",
                     "/api/v1/auth/me"
                 ).authenticated()
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+            )
+            .securityContext(sc -> sc
+                .securityContextRepository(securityContextRepository())
             )
             .authenticationProvider(authenticationProvider())
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
@@ -72,18 +82,22 @@ public class SecurityConfig {
     }
 
     @Bean
+    public org.springframework.security.web.context.SecurityContextRepository securityContextRepository() {
+        return new org.springframework.security.web.context.HttpSessionSecurityContextRepository();
+    }
+
+    @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         List<String> origins = corsProperties.getAllowedOrigins();
 
-        // Diagnóstico — eliminar en producción si se desea
         System.out.println("[CORS] ACTIVE PROFILE => " + Arrays.toString(environment.getActiveProfiles()));
         System.out.println("[CORS] ALLOWED ORIGINS => " + origins);
 
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(origins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
-        configuration.setExposedHeaders(List.of("Authorization"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "X-Requested-With"));
+        configuration.setExposedHeaders(List.of("Authorization", "X-Deprecation-Warning"));
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
