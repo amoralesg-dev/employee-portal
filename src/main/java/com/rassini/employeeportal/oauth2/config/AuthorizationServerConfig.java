@@ -50,7 +50,7 @@ public class AuthorizationServerConfig {
             .securityContext(sc -> sc.securityContextRepository(securityContextRepository))
             .exceptionHandling((exceptions) -> exceptions
                 .defaultAuthenticationEntryPointFor(
-                    new LoginUrlAuthenticationEntryPoint("/api/v1/auth/login"),
+                    new LoginUrlAuthenticationEntryPoint("http://localhost:4200/employee-portal/auth/login"),
                     new MediaTypeRequestMatcher(MediaType.TEXT_HTML)
                 )
             );
