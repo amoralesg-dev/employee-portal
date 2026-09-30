@@ -21,6 +21,7 @@ public class AuthController {
     private final AuthService authService;
     private final org.springframework.security.web.context.SecurityContextRepository securityContextRepository;
     private final org.springframework.security.core.userdetails.UserDetailsService userDetailsService;
+    private final com.rassini.employeeportal.security.UserSessionRegistry userSessionRegistry;
 
     @PostMapping("/login")
     @Operation(summary = "Login de usuario")
@@ -46,9 +47,30 @@ public class AuthController {
         org.springframework.security.core.context.SecurityContextHolder.setContext(context);
         securityContextRepository.saveContext(context, httpRequest, httpResponse);
 
+        // Registrar sesión en UserSessionRegistry para permitir invalidación durante logout OIDC
+        jakarta.servlet.http.HttpSession activeSession = httpRequest.getSession(false);
+        if (activeSession != null) {
+            userSessionRegistry.register(request.getUsername(), activeSession);
+        }
+
         return ResponseEntity.ok()
                 .header("X-Deprecation-Warning", "HMAC login is deprecated. Please migrate to corporate SSO via OAuth2/OIDC (/oauth2/authorize).")
                 .body(result.getSuccessResponse());
+    }
+
+    @PostMapping("/logout")
+    @Operation(summary = "Logout centralizado", description = "Invalida la sesión HTTP y limpia el contexto de seguridad")
+    public ResponseEntity<Void> logout(jakarta.servlet.http.HttpServletRequest httpRequest,
+                                       Authentication authentication) {
+        if (authentication != null && authentication.getName() != null) {
+            userSessionRegistry.invalidateSession(authentication.getName());
+        }
+        jakarta.servlet.http.HttpSession session = httpRequest.getSession(false);
+        if (session != null) {
+            session.invalidate();
+        }
+        org.springframework.security.core.context.SecurityContextHolder.clearContext();
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/me")
