@@ -32,6 +32,12 @@ public class AuthorizationServerConfig {
     private final org.springframework.security.web.context.SecurityContextRepository securityContextRepository;
     private final com.rassini.employeeportal.security.UserSessionRegistry userSessionRegistry;
 
+    @org.springframework.beans.factory.annotation.Value("${app.security.oauth2.authorizationserver.issuer:http://localhost:8083/employee-portal}")
+    private String issuer;
+
+    @org.springframework.beans.factory.annotation.Value("${app.security.oauth2.authorizationserver.login-url:http://localhost:4200/employee-portal/auth/login}")
+    private String loginUrl;
+
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE)
     public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
@@ -113,7 +119,7 @@ public class AuthorizationServerConfig {
                                 String postLogoutRedirectUri = request.getParameter("post_logout_redirect_uri");
                                 String redirectTarget = (postLogoutRedirectUri != null && !postLogoutRedirectUri.isBlank())
                                         ? postLogoutRedirectUri
-                                        : "http://localhost:4200/employee-portal/auth/login";
+                                        : this.loginUrl;
                                 String separator = redirectTarget.contains("?") ? "&" : "?";
                                 response.sendRedirect(redirectTarget + separator + "oidc_logout=1");
                             })
@@ -127,7 +133,7 @@ public class AuthorizationServerConfig {
             .securityContext(sc -> sc.securityContextRepository(securityContextRepository))
             .exceptionHandling((exceptions) -> exceptions
                 .defaultAuthenticationEntryPointFor(
-                    new LoginUrlAuthenticationEntryPoint("http://localhost:4200/employee-portal/auth/login"),
+                    new LoginUrlAuthenticationEntryPoint(this.loginUrl),
                     new MediaTypeRequestMatcher(MediaType.TEXT_HTML)
                 )
             );
@@ -143,7 +149,7 @@ public class AuthorizationServerConfig {
     @Bean
     public AuthorizationServerSettings authorizationServerSettings() {
         return AuthorizationServerSettings.builder()
-                .issuer("http://localhost:8083/employee-portal")
+                .issuer(this.issuer)
                 .build();
     }
 }
