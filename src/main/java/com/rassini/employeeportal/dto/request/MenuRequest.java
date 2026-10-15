@@ -1,5 +1,9 @@
 package com.rassini.employeeportal.dto.request;
 
+import com.rassini.employeeportal.entity.AppType;
+import com.rassini.employeeportal.entity.AuthType;
+import com.rassini.employeeportal.entity.TargetType;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -8,6 +12,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.util.List;
 
 /**
  * DTO de solicitud para crear o actualizar un menú.
@@ -33,6 +39,24 @@ public class MenuRequest {
     private String icon;
 
     private Integer orderIndex;
+
+    @Builder.Default
+    private TargetType targetType = TargetType.INTERNO;
+
+    @Size(max = 500, message = "La URL externa no puede exceder 500 caracteres")
+    private String externalUrl;
+
+    @Builder.Default
+    private Boolean openInNewTab = false;
+
+    @Builder.Default
+    private AppType appType = AppType.INTERNA;
+
+    @Builder.Default
+    private AuthType authType = AuthType.NONE;
+
+    @Valid
+    private List<MenuParameterRequest> parameters;
 
     /** ID del menú padre; null si es menú raíz. */
     private Long parentId;

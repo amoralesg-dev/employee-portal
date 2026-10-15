@@ -40,13 +40,16 @@ public class AccessContextServiceImpl implements AccessContextService {
     private final UserRepository userRepository;
     private final BusinessUnitRepository businessUnitRepository;
     private final BusinessUnitMapper businessUnitMapper;
+    private final com.rassini.employeeportal.service.MenuUrlResolverService menuUrlResolverService;
 
     public AccessContextServiceImpl(UserRepository userRepository, 
                                     BusinessUnitRepository businessUnitRepository,
-                                    BusinessUnitMapper businessUnitMapper) {
+                                    BusinessUnitMapper businessUnitMapper,
+                                    com.rassini.employeeportal.service.MenuUrlResolverService menuUrlResolverService) {
         this.userRepository = userRepository;
         this.businessUnitRepository = businessUnitRepository;
         this.businessUnitMapper = businessUnitMapper;
+        this.menuUrlResolverService = menuUrlResolverService;
     }
 
     @Override
@@ -82,7 +85,7 @@ public class AccessContextServiceImpl implements AccessContextService {
         log.info("EVIDENCIA - allMenus: {}", allMenus.stream().map(MenuEntity::getCode).toList());
 
         // 5. Construir árbol usando parent_id y ordenar por order_index
-        List<MenuResponse> menuTree = buildMenuTree(allMenus);
+        List<MenuResponse> menuTree = buildMenuTree(allMenus, user);
 
         log.info("EVIDENCIA - buildMenuTree: {}", menuTree);
 
@@ -124,7 +127,7 @@ public class AccessContextServiceImpl implements AccessContextService {
      * aun si el padre no está directamente asignado a un permiso.
      * Ordena por {@code orderIndex} en cada nivel.
      */
-    private List<MenuResponse> buildMenuTree(Set<MenuEntity> menus) {
+    private List<MenuResponse> buildMenuTree(Set<MenuEntity> menus, UserEntity user) {
         if (menus.isEmpty()) {
             return Collections.emptyList();
         }
@@ -163,15 +166,17 @@ public class AccessContextServiceImpl implements AccessContextService {
 
         // Convertir recursivamente a DTOs
         return roots.stream()
-                .map(root -> buildMenuResponseRecursive(root, childrenByParentId))
+                .map(root -> buildMenuResponseRecursive(root, childrenByParentId, user))
                 .toList();
     }
 
-    private MenuResponse buildMenuResponseRecursive(MenuEntity entity, Map<Long, List<MenuEntity>> childrenByParentId) {
+    private MenuResponse buildMenuResponseRecursive(MenuEntity entity, Map<Long, List<MenuEntity>> childrenByParentId, UserEntity user) {
         List<MenuEntity> children = childrenByParentId.getOrDefault(entity.getId(), Collections.emptyList());
         List<MenuResponse> childResponses = children.stream()
-                .map(child -> buildMenuResponseRecursive(child, childrenByParentId))
+                .map(child -> buildMenuResponseRecursive(child, childrenByParentId, user))
                 .toList();
+
+        String resolvedUrl = menuUrlResolverService.resolveUrl(entity, user);
 
         return MenuResponse.builder()
                 .id(entity.getId())
@@ -180,6 +185,12 @@ public class AccessContextServiceImpl implements AccessContextService {
                 .route(entity.getRoute())
                 .icon(entity.getIcon())
                 .orderIndex(entity.getOrderIndex())
+                .targetType(entity.getTargetType())
+                .externalUrl(entity.getExternalUrl())
+                .openInNewTab(entity.getOpenInNewTab())
+                .appType(entity.getAppType())
+                .authType(entity.getAuthType())
+                .resolvedUrl(resolvedUrl)
                 .parentId(entity.getParent() != null ? entity.getParent().getId() : null)
                 .children(childResponses)
                 .build();
