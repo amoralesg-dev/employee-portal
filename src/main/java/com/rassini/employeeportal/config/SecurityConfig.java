@@ -47,6 +47,7 @@ public class SecurityConfig {
                     "/api/v1/auth/login",
                     "/api/v1/auth/refresh",
                     "/api/v1/auth/mfa/verify",
+                    "/api/v1/auth/logout",
                     "/api/v1/index",
                     "/actuator/health",
                     "/actuator/info",
@@ -54,9 +55,7 @@ public class SecurityConfig {
                     "/swagger-ui.html",
                     "/v3/api-docs/**",
                     "/v3/api-docs",
-                    "/oauth2/**",
-                    "/.well-known/**",
-                    "/connect/**"
+                    "/.well-known/**"
                 ).permitAll()
                 .requestMatchers(
                     "/api/v1/users/**",
@@ -73,7 +72,7 @@ public class SecurityConfig {
                 .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
             )
             .securityContext(sc -> sc
-                .securityContextRepository(securityContextRepository())
+                .securityContextRepository(new org.springframework.security.web.context.RequestAttributeSecurityContextRepository())
             )
             .authenticationProvider(authenticationProvider())
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
@@ -83,7 +82,10 @@ public class SecurityConfig {
 
     @Bean
     public org.springframework.security.web.context.SecurityContextRepository securityContextRepository() {
-        return new org.springframework.security.web.context.HttpSessionSecurityContextRepository();
+        return new org.springframework.security.web.context.DelegatingSecurityContextRepository(
+                new org.springframework.security.web.context.RequestAttributeSecurityContextRepository(),
+                new org.springframework.security.web.context.HttpSessionSecurityContextRepository()
+        );
     }
 
     @Bean
