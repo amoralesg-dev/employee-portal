@@ -1,0 +1,154 @@
+name: CI CD EMPLOYEE-PORTAL
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar codigo
+        uses: actions/checkout@v4
+
+      - name: Configurar Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Compilar y correr tests
+        run: mvn clean verify -Dspring.profiles.active=test -e
+
+      - name: Subir reportes Surefire
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: target/surefire-reports
+          if-no-files-found: warn
+
+      - name: Subir JAR
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: employee-portal-jar
+          path: target/employee-portal-0.0.1-SNAPSHOT.jar
+          if-no-files-found: error
+
+  deploy-dev:
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    runs-on: [self-hosted, Windows, X64, backend, dev]
+
+    steps:
+      - name: Descargar JAR generado
+        uses: actions/download-artifact@v4
+        with:
+          name: employee-portal-jar
+          path: C:\deploy\employee-portal
+
+      - name: Detener servicio DEV
+        shell: cmd
+        run: |
+          net stop employee-portal-dev || exit /b 0
+
+      - name: Crear carpeta backup si no existe
+        shell: cmd
+        run: |
+          if not exist C:\apps\employee-portal\backup mkdir C:\apps\employee-portal\backup
+
+      - name: Respaldar JAR actual
+        shell: cmd
+        run: |
+          if exist C:\apps\employee-portal\employee-portal.jar (
+            copy C:\apps\employee-portal\employee-portal.jar C:\apps\employee-portal\backup\employee-portal-%GITHUB_RUN_NUMBER%.jar
+          )
+
+      - name: Copiar nuevo JAR
+        shell: cmd
+        run: |
+          copy C:\deploy\employee-portal\employee-portal-0.0.1-SNAPSHOT.jar C:\apps\employee-portal\employee-portal.jar /Y
+
+      - name: Iniciar servicio DEV
+        shell: cmd
+        run: |
+          net start employee-portal-dev
+
+      - name: Esperar arranque
+        shell: cmd
+        run: ping 127.0.0.1 -n 31 > nul
+
+      - name: Health Check
+        shell: powershell
+        run: |
+          $url = "http://localhost:8083/employee-portal/actuator/health"
+
+          for ($i = 1; $i -le 12; $i++) {
+
+            try {
+              $response = Invoke-RestMethod `
+                -Uri $url `
+                -TimeoutSec 10
+
+              $response | ConvertTo-Json -Depth 10
+
+              exit 0
+            }
+            catch {
+              Start-Sleep -Seconds 5
+            }
+          }
+
+          exit 1
+
+  deploy-prod:
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, Windows, X64, backend, prod]
+
+    steps:
+      - name: Descargar JAR generado
+        uses: actions/download-artifact@v4
+        with:
+          name: employee-portal-jar
+          path: C:\deploy\employee-portal
+
+      - name: Detener servicio PROD
+        shell: cmd
+        run: |
+          net stop employee-portal-prod || exit /b 0
+
+      - name: Crear carpeta backup si no existe
+        shell: cmd
+        run: |
+          if not exist C:\apps\employee-portal\backup mkdir C:\apps\employee-portal\backup
+
+      - name: Respaldar JAR actual
+        shell: cmd
+        run: |
+          if exist C:\apps\employee-portal\employee-portal.jar (
+            copy C:\apps\employee-portal\employee-portal.jar C:\apps\employee-portal\backup\employee-portal-%GITHUB_RUN_NUMBER%.jar
+          )
+
+      - name: Copiar nuevo JAR
+        shell: cmd
+        run: |
+          copy C:\deploy\employee-portal\employee-portal-0.0.1-SNAPSHOT.jar C:\apps\employee-portal\employee-portal.jar /Y
+
+      - name: Iniciar servicio PROD
+        shell: cmd
+        run: |
+          net start employee-portal-prod
+
+      - name: Esperar arranque
+        shell: cmd
+        run: ping 127.0.0.1 -n 31 > nul
