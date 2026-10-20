@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - dev
+
   workflow_dispatch:
 
 permissions:
@@ -94,25 +95,18 @@ jobs:
       - name: Preparar carpeta temporal
         shell: powershell
         run: |
-          $ErrorActionPreference = "Stop"
+          $ErrorActionPreference = 'Stop'
 
-          $deployPath = "C:\deploy\employee-portal"
+          $deployPath = 'C:\deploy\employee-portal'
 
           if (-not (Test-Path $deployPath)) {
-            New-Item `
-              -ItemType Directory `
-              -Path $deployPath `
-              -Force |
-              Out-Null
+            New-Item -ItemType Directory -Path $deployPath -Force | Out-Null
           }
 
-          Get-ChildItem `
-            -Path $deployPath `
-            -Force `
-            -ErrorAction SilentlyContinue |
+          Get-ChildItem -Path $deployPath -Force -ErrorAction SilentlyContinue |
             Remove-Item -Recurse -Force
 
-          Write-Host "Carpeta temporal preparada: $deployPath"
+          Write-Host "Carpeta preparada: $deployPath"
 
       - name: Descargar JAR generado
         uses: actions/download-artifact@v4
@@ -120,33 +114,18 @@ jobs:
           name: employee-portal-jar
           path: C:\deploy\employee-portal
 
-      - name: Validar artifact descargado
+      - name: Validar archivos requeridos
         shell: powershell
         run: |
-          $ErrorActionPreference = "Stop"
+          $ErrorActionPreference = 'Stop'
 
-          $sourceJar = "C:\deploy\employee-portal\employee-portal.jar"
+          $sourceJar = 'C:\deploy\employee-portal\employee-portal.jar'
+          $startScript = 'C:\apps\employee-portal\start-employee-portal.bat'
+          $envScript = 'C:\apps\employee-portal\config\employee-portal.env.cmd'
 
           if (-not (Test-Path $sourceJar)) {
-            throw "No se encontro el artifact: $sourceJar"
+            throw "No existe el artifact: $sourceJar"
           }
-
-          $jar = Get-Item $sourceJar
-
-          if ($jar.Length -le 0) {
-            throw "El artifact descargado esta vacio."
-          }
-
-          $jar |
-            Select-Object FullName, Length, LastWriteTime
-
-      - name: Validar archivos de configuracion
-        shell: powershell
-        run: |
-          $ErrorActionPreference = "Stop"
-
-          $startScript = "C:\apps\employee-portal\start-employee-portal.bat"
-          $envScript = "C:\apps\employee-portal\config\employee-portal.env.cmd"
 
           if (-not (Test-Path $startScript)) {
             throw "No existe el script de arranque: $startScript"
@@ -156,82 +135,73 @@ jobs:
             throw "No existe el archivo de ambiente: $envScript"
           }
 
-          Write-Host "Script de arranque y archivo de ambiente encontrados."
+          $artifact = Get-Item $sourceJar
 
-      - name: Crear carpeta de backup
-        shell: powershell
-        run: |
-          $ErrorActionPreference = "Stop"
+          if ($artifact.Length -le 0) {
+            throw 'El artifact descargado esta vacio.'
+          }
 
-          $backupPath = "C:\apps\employee-portal\backup"
-
-          New-Item `
-            -ItemType Directory `
-            -Path $backupPath `
-            -Force |
-            Out-Null
+          $artifact | Select-Object FullName, Length, LastWriteTime
 
       - name: Detener servicio DEV
         shell: powershell
         run: |
-          $ErrorActionPreference = "Stop"
+          $ErrorActionPreference = 'Stop'
 
-          $serviceName = "employee-portal-dev"
+          $serviceName = 'employee-portal-dev'
           $service = Get-Service -Name $serviceName -ErrorAction Stop
 
-          if ($service.Status -ne "Stopped") {
-            Stop-Service `
-              -Name $serviceName `
-              -Force `
-              -ErrorAction Stop
-
-            $service.WaitForStatus(
-              [System.ServiceProcess.ServiceControllerStatus]::Stopped,
-              [TimeSpan]::FromSeconds(45)
-            )
+          if ($service.Status -ne 'Stopped') {
+            Stop-Service -Name $serviceName -Force -ErrorAction Stop
           }
 
-          $service.Refresh()
+          $maxAttempts = 20
 
-          if ($service.Status -ne "Stopped") {
-            throw "El servicio $serviceName no se detuvo."
+          for ($i = 1; $i -le $maxAttempts; $i++) {
+            $service = Get-Service -Name $serviceName -ErrorAction Stop
+
+            Write-Host "Intento $i de $maxAttempts. Estado: $($service.Status)"
+
+            if ($service.Status -eq 'Stopped') {
+              Write-Host "Servicio $serviceName detenido correctamente."
+              exit 0
+            }
+
+            Start-Sleep -Seconds 2
           }
 
-          Write-Host "Servicio $serviceName detenido correctamente."
+          $service = Get-Service -Name $serviceName -ErrorAction Stop
+          throw "El servicio $serviceName no se detuvo. Estado: $($service.Status)"
 
-      - name: Respaldar JAR actual
+      - name: Crear backup del JAR actual
         shell: powershell
         run: |
-          $ErrorActionPreference = "Stop"
+          $ErrorActionPreference = 'Stop'
 
-          $currentJar = "C:\apps\employee-portal\employee-portal.jar"
-          $backupPath = "C:\apps\employee-portal\backup"
-          $backupJar = Join-Path `
-            $backupPath `
-            "employee-portal-$env:GITHUB_RUN_NUMBER.jar"
+          $currentJar = 'C:\apps\employee-portal\employee-portal.jar'
+          $backupPath = 'C:\apps\employee-portal\backup'
+          $backupName = "employee-portal-$env:GITHUB_RUN_NUMBER.jar"
+          $backupJar = Join-Path $backupPath $backupName
+
+          New-Item -ItemType Directory -Path $backupPath -Force | Out-Null
 
           if (Test-Path $currentJar) {
-            Copy-Item `
-              -LiteralPath $currentJar `
-              -Destination $backupJar `
-              -Force `
-              -ErrorAction Stop
-
+            Copy-Item -LiteralPath $currentJar -Destination $backupJar -Force
             Write-Host "Backup generado: $backupJar"
           } else {
-            Write-Host "No existe un JAR anterior para respaldar."
+            Write-Host 'No existe un JAR anterior para respaldar.'
           }
 
       - name: Conservar ultimos 6 backups
         shell: powershell
         run: |
-          $ErrorActionPreference = "Stop"
+          $ErrorActionPreference = 'Stop'
 
-          $backupPath = "C:\apps\employee-portal\backup"
+          $backupPath = 'C:\apps\employee-portal\backup'
 
           $backups = Get-ChildItem `
             -Path $backupPath `
-            -Filter "employee-portal-*.jar" `
+            -Filter 'employee-portal-*.jar' `
             -ErrorAction SilentlyContinue |
             Sort-Object LastWriteTime -Descending
 
@@ -239,11 +209,11 @@ jobs:
             Select-Object -Skip 6 |
             Remove-Item -Force
 
-          Write-Host "Backups conservados:"
+          Write-Host 'Backups conservados:'
 
           Get-ChildItem `
             -Path $backupPath `
-            -Filter "employee-portal-*.jar" `
+            -Filter 'employee-portal-*.jar' `
             -ErrorAction SilentlyContinue |
             Sort-Object LastWriteTime -Descending |
             Select-Object Name, Length, LastWriteTime
@@ -251,10 +221,10 @@ jobs:
       - name: Copiar nuevo JAR
         shell: powershell
         run: |
-          $ErrorActionPreference = "Stop"
+          $ErrorActionPreference = 'Stop'
 
-          $sourceJar = "C:\deploy\employee-portal\employee-portal.jar"
-          $targetJar = "C:\apps\employee-portal\employee-portal.jar"
+          $sourceJar = 'C:\deploy\employee-portal\employee-portal.jar'
+          $targetJar = 'C:\apps\employee-portal\employee-portal.jar'
 
           if (-not (Test-Path $sourceJar)) {
             throw "No existe el JAR fuente: $sourceJar"
@@ -274,66 +244,73 @@ jobs:
           $target = Get-Item $targetJar
 
           if ($source.Length -ne $target.Length) {
-            throw "El tamano del JAR desplegado no coincide con el artifact."
+            throw 'El tamano del JAR desplegado no coincide con el artifact.'
           }
 
-          Write-Host "JAR desplegado correctamente:"
+          $sourceHash = (Get-FileHash -Path $sourceJar -Algorithm SHA256).Hash
+          $targetHash = (Get-FileHash -Path $targetJar -Algorithm SHA256).Hash
 
-          $target |
-            Select-Object FullName, Length, LastWriteTime
+          if ($sourceHash -ne $targetHash) {
+            throw 'El hash del JAR desplegado no coincide con el artifact.'
+          }
+
+          Write-Host 'JAR desplegado correctamente:'
+          $target | Select-Object FullName, Length, LastWriteTime
+          Write-Host "SHA256: $targetHash"
 
       - name: Limpiar logs anteriores
         shell: powershell
         run: |
-          $ErrorActionPreference = "Stop"
+          $ErrorActionPreference = 'Stop'
 
-          $logsPath = "C:\apps\employee-portal\logs"
-          $stdoutLog = Join-Path $logsPath "employee-portal.log"
-          $stderrLog = Join-Path $logsPath "employee-portal-error.log"
+          $logsPath = 'C:\apps\employee-portal\logs'
+          $stdoutLog = Join-Path $logsPath 'employee-portal.log'
+          $stderrLog = Join-Path $logsPath 'employee-portal-error.log'
 
-          New-Item `
-            -ItemType Directory `
-            -Path $logsPath `
-            -Force |
-            Out-Null
+          New-Item -ItemType Directory -Path $logsPath -Force | Out-Null
 
-          Set-Content -Path $stdoutLog -Value ""
-          Set-Content -Path $stderrLog -Value ""
+          Set-Content -Path $stdoutLog -Value ''
+          Set-Content -Path $stderrLog -Value ''
+
+          Write-Host 'Logs anteriores limpiados.'
 
       - name: Iniciar servicio DEV
         shell: powershell
         run: |
-          $ErrorActionPreference = "Stop"
+          $ErrorActionPreference = 'Stop'
 
-          $serviceName = "employee-portal-dev"
+          $serviceName = 'employee-portal-dev'
+          $service = Get-Service -Name $serviceName -ErrorAction Stop
 
-          Start-Service `
-            -Name $serviceName `
-            -ErrorAction Stop
-
-          $service = Get-Service `
-            -Name $serviceName `
-            -ErrorAction Stop
-
-          $service.WaitForStatus(
-            [System.ServiceProcess.ServiceControllerStatus]::Running,
-            [TimeSpan]::FromSeconds(45)
-          )
-
-          $service.Refresh()
-
-          if ($service.Status -ne "Running") l servicio $serviceName no quedo en RUNNING."
+          if ($service.Status -ne 'Running') {
+            Start-Service -Name $serviceName -ErrorAction Stop
           }
 
-          Write-Host "Servicio $serviceName en RUNNING."
+          $maxAttempts = 20
+
+          for ($i = 1; $i -le $maxAttempts; $i++) {
+            $service = Get-Service -Name $serviceName -ErrorAction Stop
+
+            Write-Host "Intento $i de $maxAttempts. Estado: $($service.Status)"
+
+            if ($service.Status -eq 'Running') {
+              Write-Host "Servicio $serviceName en RUNNING."
+              exit 0
+            }
+
+            Start-Sleep -Seconds 2
+          }
+
+          $service = Get-Service -Name $serviceName -ErrorAction Stop
+          throw "El servicio $serviceName no quedo en RUNNING. Estado: $($service.Status)"
 
       - name: Esperar Health DEV
         shell: powershell
         run: |
-          $ErrorActionPreference = "Continue"
+          $ErrorActionPreference = 'Continue'
 
-          $url = "http://127.0.0.1:8083/employee-portal/actuator/health"
-          $maxAttempts = 18
+          $url = 'http://127.0.0.1:8083/employee-portal/actuator/health'
+          $maxAttempts = 24
 
           for ($i = 1; $i -le $maxAttempts; $i++) {
             Write-Host "Intento $i de $maxAttempts"
@@ -344,11 +321,10 @@ jobs:
                 -Method Get `
                 -TimeoutSec 15
 
-              $response |
-                ConvertTo-Json -Depth 10
+              $response | ConvertTo-Json -Depth 10
 
-              if ($response.status -eq "UP") {
-                Write-Host "Employee Portal DEV esta UP."
+              if ($response.status -eq 'UP') {
+                Write-Host 'Employee Portal DEV esta UP.'
                 exit 0
               }
 
@@ -361,24 +337,24 @@ jobs:
             Start-Sleep -Seconds 5
           }
 
-          Write-Host "Employee Portal DEV no alcanzo estado UP."
+          Write-Host 'Employee Portal DEV no alcanzo estado UP.'
 
-          Get-Service -Name "employee-portal-dev" |
+          Get-Service -Name 'employee-portal-dev' |
             Format-List Name, Status
 
           netstat -ano |
-            Select-String ":8083"
+            Select-String ':8083'
 
-          $stdoutLog = "C:\apps\employee-portal\logs\employee-portal.log"
-          $stderrLog = "C:\apps\employee-portal\logs\employee-portal-error.log"
+          $stdoutLog = 'C:\apps\employee-portal\logs\employee-portal.log'
+          $stderrLog = 'C:\apps\employee-portal\logs\employee-portal-error.log'
 
           if (Test-Path $stdoutLog) {
-            Write-Host "Ultimas lineas de stdout:"
+            Write-Host 'Ultimas lineas de stdout:'
             Get-Content $stdoutLog -Tail 100
           }
 
           if (Test-Path $stderrLog) {
-            Write-Host "Ultimas lineas de stderr:"
+            Write-Host 'Ultimas lineas de stderr:'
             Get-Content $stderrLog -Tail 100
           }
 
