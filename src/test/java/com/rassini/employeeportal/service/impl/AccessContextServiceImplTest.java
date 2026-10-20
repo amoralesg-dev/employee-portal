@@ -7,7 +7,10 @@ import com.rassini.employeeportal.entity.PermissionEntity;
 import com.rassini.employeeportal.entity.RoleEntity;
 import com.rassini.employeeportal.entity.UserEntity;
 import com.rassini.employeeportal.exception.ResourceNotFoundException;
+import com.rassini.employeeportal.mapper.BusinessUnitMapper;
+import com.rassini.employeeportal.repository.BusinessUnitRepository;
 import com.rassini.employeeportal.repository.UserRepository;
+import com.rassini.employeeportal.service.MenuUrlResolverService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -23,6 +26,9 @@ import static org.mockito.Mockito.*;
 class AccessContextServiceImplTest {
     @InjectMocks private AccessContextServiceImpl service;
     @Mock private UserRepository userRepository;
+    @Mock private BusinessUnitRepository businessUnitRepository;
+    @Mock private BusinessUnitMapper businessUnitMapper;
+    @Mock private MenuUrlResolverService menuUrlResolverService;
 
     @BeforeEach
     void setUp() { MockitoAnnotations.openMocks(this); }

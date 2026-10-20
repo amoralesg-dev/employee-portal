@@ -205,5 +205,52 @@ class MenuUrlResolverServiceImplTest {
 
         assertEquals("https://example.com?bus=", resolver.resolveUrl(menu, userNoBUs));
         assertEquals("https://example.com?bus=", resolver.resolveUrl(menu, null));
+
+        assertFalse(resolver.getAvailablePlaceholders().isEmpty());
+
+        UserEntity user = UserEntity.builder()
+                .id(42L)
+                .username("jdoe")
+                .email("jdoe@rassini.com")
+                .build();
+
+        MenuParameterEntity pEmail = MenuParameterEntity.builder().id(1L).paramName("email").paramValue("${EMAIL}").active(true).build();
+        MenuParameterEntity pEmpId = MenuParameterEntity.builder().id(2L).paramName("emp").paramValue("${EMPLOYEE_ID}").active(true).build();
+        MenuParameterEntity pTheme = MenuParameterEntity.builder().id(3L).paramName("theme").paramValue("${THEME}").active(true).build();
+        MenuParameterEntity pStatic = MenuParameterEntity.builder().id(4L).paramName("mode").paramValue("portal").active(true).build();
+        MenuParameterEntity pInactive = MenuParameterEntity.builder().id(5L).paramName("skip").paramValue("1").active(false).build();
+
+        MenuEntity menu2 = MenuEntity.builder()
+                .targetType(TargetType.EXTERNO)
+                .externalUrl("https://example.com/app?existing=1")
+                .parameters(Set.of(pEmail, pEmpId, pTheme, pStatic, pInactive))
+                .build();
+
+        String url = resolver.resolveUrl(menu2, user);
+        assertNotNull(url);
+        assertTrue(url.startsWith("https://example.com/app?existing=1&"));
+        assertTrue(url.contains("emp=42"));
+        assertTrue(url.contains("theme=light"));
+        assertTrue(url.contains("mode=portal"));
+        assertFalse(url.contains("skip="));
+
+        // Null branches & null user branches for variables
+        assertDoesNotThrow(() -> resolver.validateParameterSafety(null, null));
+        MenuEntity blankUrlMenu = MenuEntity.builder().targetType(TargetType.EXTERNO).externalUrl("   ").build();
+        assertNull(resolver.resolveUrl(blankUrlMenu, user));
+
+        MenuParameterEntity pNullVal = MenuParameterEntity.builder().id(10L).paramName("n").paramValue(null).active(true).build();
+        MenuParameterEntity pNullActive = MenuParameterEntity.builder().id(11L).paramName("na").paramValue("1").active(null).build();
+        MenuParameterEntity pUserNull = MenuParameterEntity.builder().id(12L).paramName("u").paramValue("${USERNAME}").active(true).build();
+        MenuParameterEntity pEmailNull = MenuParameterEntity.builder().id(13L).paramName("e").paramValue("${EMAIL}").active(true).build();
+        MenuParameterEntity pEmpNull = MenuParameterEntity.builder().id(14L).paramName("id").paramValue("${EMPLOYEE_ID}").active(true).build();
+        MenuParameterEntity pBuNull = MenuParameterEntity.builder().id(15L).paramName("bu").paramValue("${BUSINESS_UNIT}").active(true).build();
+
+        MenuEntity menuNullUser = MenuEntity.builder()
+                .targetType(TargetType.EXTERNO)
+                .externalUrl("https://example.com/app")
+                .parameters(Set.of(pNullVal, pNullActive, pUserNull, pEmailNull, pEmpNull, pBuNull))
+                .build();
+        assertNotNull(resolver.resolveUrl(menuNullUser, null));
     }
 }

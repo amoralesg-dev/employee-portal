@@ -17,6 +17,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DataJpaTest(properties = {
     "spring.jpa.hibernate.ddl-auto=create-drop"
 })
+@org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase(
+    replace = org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase.Replace.NONE
+)
 @ActiveProfiles("test")
 class MfaCryptoIntegrationTest {
 

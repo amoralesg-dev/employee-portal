@@ -32,6 +32,9 @@ class PlaceholderControllerTest {
     @MockBean
     private JwtService jwtService;
 
+    @MockBean
+    private org.springframework.security.core.userdetails.UserDetailsService userDetailsService;
+
     @Test
     @DisplayName("GET /api/v1/placeholders debe retornar lista de placeholders con status 200")
     void testGetPlaceholders() throws Exception {
