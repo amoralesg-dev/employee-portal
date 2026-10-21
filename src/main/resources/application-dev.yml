@@ -8,6 +8,11 @@ app:
       - https://rss-cxp-dev.rassini.com
       - http://localhost:4200
       - http://localhost:4205
+  security:
+    oauth2:
+      authorizationserver:
+        issuer: ${OIDC_ISSUER:http://10.15.1.15:8083/employee-portal}
+        login-url: ${OIDC_LOGIN_URL:https://rss-cxp-dev.rassini.com/employee-portal/auth/login}
 
 spring:
   datasource:
