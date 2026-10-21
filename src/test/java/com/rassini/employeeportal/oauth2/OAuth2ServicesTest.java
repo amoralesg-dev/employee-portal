@@ -100,7 +100,10 @@ class OAuth2ServicesTest {
         assertTrue(registeredClient.getScopes().contains("openid"));
         assertTrue(registeredClient.getScopes().contains("business_units"));
         assertTrue(registeredClient.getRedirectUris().contains("http://localhost:4201/callback"));
+        assertTrue(registeredClient.getRedirectUris().contains("https://rss-cxp-dev.rassini.com/portal-cxp/callback"));
         assertTrue(registeredClient.getPostLogoutRedirectUris().contains("http://localhost:4201/login"));
+        assertTrue(registeredClient.getPostLogoutRedirectUris().contains("https://rss-cxp-dev.rassini.com/portal-cxp/logout"));
+        assertTrue(registeredClient.getPostLogoutRedirectUris().contains("https://rss-cxp-dev.rassini.com/employee-portal/auth/login"));
         assertTrue(registeredClient.getClientSettings().isRequireProofKey());
     }
 

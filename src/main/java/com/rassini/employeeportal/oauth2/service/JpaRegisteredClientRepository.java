@@ -90,6 +90,23 @@ public class JpaRegisteredClientRepository implements RegisteredClientRepository
             }
         }
 
+        if ("ms-pagos-client".equals(entity.getClientId())) {
+            builder.redirectUri("https://rss-cxp-dev.rassini.com/portal-cxp/callback");
+            builder.redirectUri("http://10.15.1.37:8080/portal-cxp/callback");
+            builder.redirectUri("http://localhost:4200/portal-cxp/callback");
+            builder.redirectUri("http://localhost:4200/callback");
+            builder.redirectUri("http://localhost:4201/portal-cxp/callback");
+            builder.redirectUri("http://localhost:4201/callback");
+
+            builder.postLogoutRedirectUri("https://rss-cxp-dev.rassini.com/portal-cxp/logout");
+            builder.postLogoutRedirectUri("https://rss-cxp-dev.rassini.com/employee-portal/auth/login");
+            builder.postLogoutRedirectUri("http://10.15.1.37:8080/portal-cxp/logout");
+            builder.postLogoutRedirectUri("http://localhost:4200/portal-cxp/logout");
+            builder.postLogoutRedirectUri("http://localhost:4200/logout");
+            builder.postLogoutRedirectUri("http://localhost:4201/portal-cxp/logout");
+            builder.postLogoutRedirectUri("http://localhost:4201/logout");
+        }
+
         ClientSettings clientSettings = ClientSettings.builder()
                 .requireProofKey(Boolean.TRUE.equals(entity.getRequireProofKey()))
                 .requireAuthorizationConsent(Boolean.TRUE.equals(entity.getRequireAuthorizationConsent()))
