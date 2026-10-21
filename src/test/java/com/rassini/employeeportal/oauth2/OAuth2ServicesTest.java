@@ -100,11 +100,47 @@ class OAuth2ServicesTest {
         assertTrue(registeredClient.getScopes().contains("openid"));
         assertTrue(registeredClient.getScopes().contains("business_units"));
         assertTrue(registeredClient.getRedirectUris().contains("http://localhost:4201/callback"));
+        assertTrue(registeredClient.getRedirectUris().contains("http://localhost:4201/portal-cxp/callback"));
+        assertTrue(registeredClient.getRedirectUris().contains("http://localhost:4200/callback"));
+        assertTrue(registeredClient.getRedirectUris().contains("http://localhost:4200/portal-cxp/callback"));
         assertTrue(registeredClient.getRedirectUris().contains("https://rss-cxp-dev.rassini.com/portal-cxp/callback"));
         assertTrue(registeredClient.getPostLogoutRedirectUris().contains("http://localhost:4201/login"));
+        assertTrue(registeredClient.getPostLogoutRedirectUris().contains("http://localhost:4201/logout"));
+        assertTrue(registeredClient.getPostLogoutRedirectUris().contains("http://localhost:4200/logout"));
         assertTrue(registeredClient.getPostLogoutRedirectUris().contains("https://rss-cxp-dev.rassini.com/portal-cxp/logout"));
         assertTrue(registeredClient.getPostLogoutRedirectUris().contains("https://rss-cxp-dev.rassini.com/employee-portal/auth/login"));
+        assertTrue(registeredClient.getRedirectUris().stream().noneMatch(uri -> uri.contains("*")));
+        assertTrue(registeredClient.getPostLogoutRedirectUris().stream().noneMatch(uri -> uri.contains("*")));
+        assertTrue(registeredClient.getRedirectUris().stream().noneMatch(uri -> uri.contains("10.15.1.15")));
         assertTrue(registeredClient.getClientSettings().isRequireProofKey());
+    }
+
+    @Test
+    void testDevOidcConfiguration_UsesHttpsPublicIssuerAndLoginUrl() throws Exception {
+        org.springframework.beans.factory.config.YamlPropertiesFactoryBean yaml = new org.springframework.beans.factory.config.YamlPropertiesFactoryBean();
+        yaml.setResources(new org.springframework.core.io.ClassPathResource("application-dev.yml"));
+        java.util.Properties props = yaml.getObject();
+        assertNotNull(props);
+
+        String rawIssuer = props.getProperty("app.security.oauth2.authorizationserver.issuer");
+        String rawLoginUrl = props.getProperty("app.security.oauth2.authorizationserver.login-url");
+
+        assertNotNull(rawIssuer);
+        assertNotNull(rawLoginUrl);
+        assertTrue(rawIssuer.contains("https://rss-cxp-dev.rassini.com/employee-portal"));
+        assertFalse(rawIssuer.contains("10.15.1.15:8083"));
+        assertTrue(rawLoginUrl.contains("https://rss-cxp-dev.rassini.com/employee-portal/auth/login"));
+
+        com.rassini.employeeportal.oauth2.config.AuthorizationServerConfig config =
+                new com.rassini.employeeportal.oauth2.config.AuthorizationServerConfig(null, null, null, null, null);
+        org.springframework.test.util.ReflectionTestUtils.setField(
+                config, "issuer", "https://rss-cxp-dev.rassini.com/employee-portal");
+        org.springframework.test.util.ReflectionTestUtils.setField(
+                config, "loginUrl", "https://rss-cxp-dev.rassini.com/employee-portal/auth/login");
+
+        org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings settings =
+                config.authorizationServerSettings();
+        assertEquals("https://rss-cxp-dev.rassini.com/employee-portal", settings.getIssuer());
     }
 
     @Test
