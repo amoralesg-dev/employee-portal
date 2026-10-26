@@ -6,6 +6,12 @@ on:
       - dev
 
   workflow_dispatch:
+    inputs:
+      rollback_backup:
+        description: "Opcional: Nombre del JAR en backup para rollback (ej. employee-portal-9.jar o latest). Dejar vacio para deploy normal."
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: read
@@ -17,6 +23,7 @@ concurrency:
 jobs:
   build:
     name: Build Employee Portal
+    if: ${{ github.event.inputs.rollback_backup == '' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -77,9 +84,11 @@ jobs:
 
   deploy-dev:
     name: Deploy Employee Portal DEV
-    needs: build
+    needs: [build]
 
     if: >
+      always() &&
+      (needs.build.result == 'success' || (github.event_name == 'workflow_dispatch' && github.event.inputs.rollback_backup != '')) &&
       github.ref == 'refs/heads/dev' &&
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
 
@@ -109,10 +118,39 @@ jobs:
           Write-Host "Carpeta preparada: $deployPath"
 
       - name: Descargar JAR generado
+        if: ${{ github.event.inputs.rollback_backup == '' }}
         uses: actions/download-artifact@v4
         with:
           name: employee-portal-jar
           path: C:\deploy\employee-portal
+
+      - name: Preparar JAR desde backup (Modo Rollback)
+        if: ${{ github.event.inputs.rollback_backup != '' }}
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $backupPath = 'C:\apps\employee-portal\backup'
+          $requested = '${{ github.event.inputs.rollback_backup }}'.Trim()
+
+          if ($requested -eq 'latest') {
+            $selected = Get-ChildItem -Path $backupPath -Filter 'employee-portal-*.jar' -ErrorAction Stop |
+              Sort-Object LastWriteTime -Descending |
+              Select-Object -First 1
+          } else {
+            $candidatePath = Join-Path $backupPath $requested
+            if (-not (Test-Path $candidatePath)) {
+              throw "No existe el backup solicitado: $candidatePath"
+            }
+            $selected = Get-Item $candidatePath
+          }
+
+          if (-not $selected) {
+            throw "No se encontraron backups disponibles en $backupPath"
+          }
+
+          Copy-Item -LiteralPath $selected.FullName -Destination 'C:\deploy\employee-portal\employee-portal.jar' -Force
+          Write-Host "Rollback preparado desde backup: $($selected.FullName)"
 
       - name: Validar archivos requeridos
         shell: powershell
@@ -179,13 +217,26 @@ jobs:
           $ErrorActionPreference = 'Stop'
 
           $currentJar = 'C:\apps\employee-portal\employee-portal.jar'
+          $versionMetaPath = 'C:\apps\employee-portal\current-version.json'
           $backupPath = 'C:\apps\employee-portal\backup'
-          $backupName = "employee-portal-$env:GITHUB_RUN_NUMBER.jar"
-          $backupJar = Join-Path $backupPath $backupName
 
           New-Item -ItemType Directory -Path $backupPath -Force | Out-Null
 
           if (Test-Path $currentJar) {
+            $backupTag = "$env:GITHUB_RUN_NUMBER"
+            if (Test-Path $versionMetaPath) {
+              try {
+                $meta = Get-Content $versionMetaPath -Raw | ConvertFrom-Json
+                if ($meta.runNumber) {
+                  $backupTag = "$($meta.runNumber)"
+                }
+              } catch {
+                Write-Host 'Aviso: no se pudo leer current-version.json, usando GITHUB_RUN_NUMBER actual.'
+              }
+            }
+            $backupName = "employee-portal-$backupTag.jar"
+            $backupJar = Join-Path $backupPath $backupName
+
             Copy-Item -LiteralPath $currentJar -Destination $backupJar -Force
             Write-Host "Backup generado: $backupJar"
           } else {
@@ -258,21 +309,65 @@ jobs:
           $target | Select-Object FullName, Length, LastWriteTime
           Write-Host "SHA256: $targetHash"
 
-      - name: Limpiar logs anteriores
+          $shortSha = if ($env:GITHUB_SHA) { $env:GITHUB_SHA.Substring(0, [Math]::Min(7, $env:GITHUB_SHA.Length)) } else { 'unknown' }
+          $versionMeta = [ordered]@{
+            application    = 'employee-portal'
+            runNumber      = "$env:GITHUB_RUN_NUMBER"
+            commitSha      = "$env:GITHUB_SHA"
+            shortSha       = $shortSha
+            rollbackBackup = '${{ github.event.inputs.rollback_backup }}'
+            deployedAt     = (Get-Date).ToString('yyyy-MM-ddTHH:mm:ssK')
+            jarSize        = $target.Length
+            sha256         = $targetHash
+          }
+          $versionMeta | ConvertTo-Json -Depth 5 | Set-Content -Path 'C:\apps\employee-portal\current-version.json' -Encoding UTF8
+          Write-Host 'Metadatos de version activa registrados en C:\apps\employee-portal\current-version.json'
+
+      - name: Asegurar estructura de logs y desacoplar AppStdout en NSSM para Logback
         shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
 
+          $serviceName = 'employee-portal-dev'
           $logsPath = 'C:\apps\employee-portal\logs'
-          $stdoutLog = Join-Path $logsPath 'employee-portal.log'
+          $archivePath = Join-Path $logsPath 'archive'
           $stderrLog = Join-Path $logsPath 'employee-portal-error.log'
 
           New-Item -ItemType Directory -Path $logsPath -Force | Out-Null
+          New-Item -ItemType Directory -Path $archivePath -Force | Out-Null
 
-          Set-Content -Path $stdoutLog -Value ''
-          Set-Content -Path $stderrLog -Value ''
+          $nssmCmd = Get-Command nssm.exe -ErrorAction SilentlyContinue
+          $nssmExe = if ($nssmCmd) { $nssmCmd.Source } else { $null }
+          if (-not $nssmExe) {
+            foreach ($candidate in @('C:\nssm\nssm.exe', 'C:\tools\nssm\nssm.exe', 'C:\Program Files\nssm\nssm.exe', 'C:\Windows\System32\nssm.exe')) {
+              if (Test-Path $candidate) {
+                $nssmExe = $candidate
+                break
+              }
+            }
+          }
 
-          Write-Host 'Logs anteriores limpiados.'
+          $nssmRegPath = "HKLM:\SYSTEM\CurrentControlSet\Services\$serviceName\Parameters"
+
+          if ($nssmExe) {
+            Write-Host "Usando nssm.exe en: $nssmExe"
+            & $nssmExe reset $serviceName AppStdout | Out-Host
+            & $nssmExe set $serviceName AppStderr $stderrLog | Out-Host
+          } elseif (Test-Path $nssmRegPath) {
+            $params = Get-ItemProperty -Path $nssmRegPath
+            if ($params.PSObject.Properties.Name -contains 'AppStdout' -and $params.AppStdout -like '*employee-portal.log') {
+              Remove-ItemProperty -Path $nssmRegPath -Name 'AppStdout' -ErrorAction SilentlyContinue
+              Write-Host 'AppStdout desacoplado de employee-portal.log en registro NSSM.'
+            }
+            Set-ItemProperty -Path $nssmRegPath -Name 'AppStderr' -Value $stderrLog -Type ExpandString
+          }
+
+          if (Test-Path $nssmRegPath) {
+            Write-Host '=== Parametros actuales del servicio NSSM ==='
+            Get-ItemProperty -Path $nssmRegPath |
+              Select-Object Application, AppDirectory, AppParameters, AppStdout, AppStderr |
+              Format-List
+          }
 
       - name: Iniciar servicio DEV
         shell: powershell
@@ -325,6 +420,26 @@ jobs:
 
               if ($response.status -eq 'UP') {
                 Write-Host 'Employee Portal DEV esta UP.'
+
+                Write-Host '=== Validacion de current-version.json ==='
+                if (Test-Path 'C:\apps\employee-portal\current-version.json') {
+                  Get-Content 'C:\apps\employee-portal\current-version.json'
+                }
+
+                Write-Host '=== Validacion de backups en C:\apps\employee-portal\backup (maximo 6) ==='
+                $bks = Get-ChildItem -Path 'C:\apps\employee-portal\backup' -Filter 'employee-portal-*.jar' -ErrorAction SilentlyContinue |
+                  Sort-Object LastWriteTime -Descending
+                Write-Host "Total backups: $($bks.Count)"
+                $bks | Select-Object Name, Length, LastWriteTime | Out-Host
+
+                Write-Host '=== Validacion de estructura de logs y escritura de Logback ==='
+                Get-ChildItem -Path 'C:\apps\employee-portal\logs' -Force -ErrorAction SilentlyContinue |
+                  Select-Object Name, Mode, Length, LastWriteTime | Out-Host
+                if (Test-Path 'C:\apps\employee-portal\logs\employee-portal.log') {
+                  Write-Host 'Ultimas 15 lineas de C:\apps\employee-portal\logs\employee-portal.log:'
+                  Get-Content 'C:\apps\employee-portal\logs\employee-portal.log' -Tail 15 | Out-Host
+                }
+
                 exit 0
               }
 
