@@ -3,12 +3,14 @@ package com.rassini.employeeportal.service.impl;
 import com.rassini.employeeportal.dto.request.PermissionRequest;
 import com.rassini.employeeportal.dto.response.MenuResponse;
 import com.rassini.employeeportal.dto.response.PermissionResponse;
+import com.rassini.employeeportal.entity.ApplicationEntity;
 import com.rassini.employeeportal.entity.MenuEntity;
 import com.rassini.employeeportal.entity.PermissionEntity;
 import com.rassini.employeeportal.exception.BusinessException;
 import com.rassini.employeeportal.exception.ResourceNotFoundException;
 import com.rassini.employeeportal.mapper.MenuMapper;
 import com.rassini.employeeportal.mapper.PermissionMapper;
+import com.rassini.employeeportal.repository.ApplicationRepository;
 import com.rassini.employeeportal.repository.MenuRepository;
 import com.rassini.employeeportal.repository.PermissionRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,6 +30,7 @@ class PermissionServiceImplTest {
     @InjectMocks private PermissionServiceImpl service;
     @Mock private PermissionRepository repository;
     @Mock private MenuRepository menuRepository;
+    @Mock private ApplicationRepository applicationRepository;
     @Mock private PermissionMapper mapper;
     @Mock private MenuMapper menuMapper;
 
@@ -43,8 +46,9 @@ class PermissionServiceImplTest {
 
     @Test
     void testCreatePermission_Success() {
-        PermissionRequest req = new PermissionRequest(); req.setCode("P1");
+        PermissionRequest req = new PermissionRequest(); req.setCode("P1"); req.setApplicationId(1L);
         when(repository.existsByCode("P1")).thenReturn(false);
+        when(applicationRepository.findById(1L)).thenReturn(Optional.of(new ApplicationEntity()));
         when(mapper.toEntity(any())).thenReturn(new PermissionEntity());
         when(repository.save(any())).thenReturn(new PermissionEntity());
         when(mapper.toResponse(any())).thenReturn(new PermissionResponse());
@@ -73,9 +77,10 @@ class PermissionServiceImplTest {
     
     @Test
     void testUpdatePermission_Success() {
-        PermissionRequest req = new PermissionRequest(); req.setDescription("d"); req.setCode("P1");
+        PermissionRequest req = new PermissionRequest(); req.setDescription("d"); req.setCode("P1"); req.setApplicationId(1L);
         PermissionEntity ent = new PermissionEntity(); ent.setCode("P1");
         when(repository.findById(1L)).thenReturn(Optional.of(ent));
+        when(applicationRepository.findById(1L)).thenReturn(Optional.of(new ApplicationEntity()));
         when(repository.save(any())).thenReturn(ent);
         when(mapper.toResponse(any())).thenReturn(new PermissionResponse());
         assertNotNull(service.updatePermission(1L, req));

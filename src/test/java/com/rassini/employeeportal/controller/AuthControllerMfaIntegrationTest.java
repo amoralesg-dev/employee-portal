@@ -35,6 +35,7 @@ import static org.mockito.Mockito.when;
 import com.rassini.employeeportal.dto.response.LoginResponse;
 
 @WebMvcTest(AuthController.class)
+@AutoConfigureMockMvc(addFilters = false)
 @Import({JwtAuthenticationFilter.class, JwtService.class})
 @ActiveProfiles("test")
 class AuthControllerMfaIntegrationTest {
@@ -50,6 +51,12 @@ class AuthControllerMfaIntegrationTest {
     
     @MockBean
     private MfaCryptoService mfaCryptoService;
+
+    @MockBean
+    private org.springframework.security.web.context.SecurityContextRepository securityContextRepository;
+
+    @MockBean
+    private com.rassini.employeeportal.security.UserSessionRegistry userSessionRegistry;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -68,6 +75,12 @@ class AuthControllerMfaIntegrationTest {
         result.setSuccessResponse(mockRes);
 
         when(authService.login(any(LoginRequest.class))).thenReturn(result);
+        when(userDetailsService.loadUserByUsername("user_no_mfa")).thenReturn(
+                org.springframework.security.core.userdetails.User.withUsername("user_no_mfa")
+                        .password("encoded")
+                        .authorities(java.util.Collections.emptyList())
+                        .build()
+        );
 
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)

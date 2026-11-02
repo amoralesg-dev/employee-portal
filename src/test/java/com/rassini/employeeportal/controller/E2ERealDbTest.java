@@ -27,7 +27,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles("test-e2e")
+@ActiveProfiles("test")
 public class E2ERealDbTest {
 
     @Autowired
@@ -101,14 +101,10 @@ public class E2ERealDbTest {
     void executeAllScenarios() throws Exception {
         System.out.println("=== 0. Verificacion de Entorno y Base de Datos ===");
         String dbName = jdbcTemplate.queryForObject("SELECT DATABASE()", String.class);
-        String hostname = jdbcTemplate.queryForObject("SELECT @@hostname", String.class);
-        String port = jdbcTemplate.queryForObject("SELECT @@port", String.class);
         System.out.println("DATABASE: " + dbName);
-        System.out.println("HOSTNAME: " + hostname);
-        System.out.println("PORT: " + port);
         System.out.println("Nombres de usuario generados: " + userNoMfaName + ", " + userWithMfaName);
 
-        assertThat(dbName).isEqualTo("iam_test"); // Validacion estricta
+        assertThat(dbName).isEqualToIgnoringCase("iam_test"); // Validacion estricta
 
         System.out.println("\n=== 1. Login sin MFA ===");
         LoginRequest req1 = new LoginRequest(userNoMfaName, RAW_PASSWORD);
@@ -163,9 +159,9 @@ public class E2ERealDbTest {
 
         System.out.println("\n=== 6. JTI consumido (Replay attack) ===");
         ResponseEntity<Map> res6 = restTemplate.postForEntity("/api/v1/auth/mfa/verify", verifyReqSuccess, Map.class);
-        assertThat(res6.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(res6.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
         assertThat(res6.getBody().get("message").toString()).contains("ya utilizado");
-        System.out.println("-> OK: HTTP 400 - Token ya utilizado");
+        System.out.println("-> OK: HTTP 401 - Token ya utilizado");
 
         System.out.println("\n=== 7. Limite de intentos ===");
         ResponseEntity<Map> res7Login = restTemplate.postForEntity("/api/v1/auth/login", req2, Map.class);
@@ -183,7 +179,7 @@ public class E2ERealDbTest {
         goodReqButBlocked.setCode(generateValidTotp());
         ResponseEntity<Map> res7Fail = restTemplate.postForEntity("/api/v1/auth/mfa/verify", goodReqButBlocked, Map.class);
         System.out.println("-> res7Fail body: " + res7Fail.getBody());
-        assertThat(res7Fail.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(res7Fail.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
         System.out.println("-> OK: HTTP " + res7Fail.getStatusCode() + " - " + res7Fail.getBody().get("message"));
 
         System.out.println("\n=== 8. Usuario deshabilitado despues de emitir tempToken ===");

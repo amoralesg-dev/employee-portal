@@ -255,5 +255,46 @@ class MenuServiceImplTest {
         when(repository.findByParentIsNullOrderByOrderIndexAsc()).thenReturn(List.of(new MenuEntity()));
         when(mapper.toResponse(any())).thenReturn(new MenuResponse());
         assertFalse(service.getMenuTree().isEmpty());
+
+        MenuParameterRequest pReq = MenuParameterRequest.builder()
+                .paramName("bu")
+                .paramValue("${BUSINESS_UNIT}")
+                .active(true)
+                .build();
+
+        MenuRequest req = new MenuRequest();
+        req.setCode("M_PARAM");
+        req.setApplicationId(1L);
+        req.setTargetType(TargetType.EXTERNO);
+        req.setExternalUrl("https://portal.rassini.com");
+        req.setOpenInNewTab(true);
+        req.setAppType(com.rassini.employeeportal.entity.AppType.INTERNA);
+        req.setAuthType(com.rassini.employeeportal.entity.AuthType.OIDC);
+        req.setParameters(List.of(pReq));
+
+        MenuEntity entity = new MenuEntity();
+        entity.setCode("M_PARAM");
+        when(repository.findByCode("M_PARAM")).thenReturn(Optional.empty());
+        when(mapper.toEntity(any())).thenReturn(entity);
+        when(mapper.toParameterEntity(any(), any())).thenReturn(new com.rassini.employeeportal.entity.MenuParameterEntity());
+        when(repository.save(any())).thenReturn(entity);
+
+        MenuResponse childResp = MenuResponse.builder()
+                .id(20L)
+                .targetType(TargetType.EXTERNO)
+                .externalUrl("https://child.rassini.com")
+                .build();
+        MenuResponse rootResp = MenuResponse.builder()
+                .id(10L)
+                .children(List.of(childResp))
+                .build();
+
+        when(mapper.toResponse(any())).thenReturn(rootResp);
+        when(repository.findById(10L)).thenReturn(Optional.of(entity));
+        when(repository.findById(20L)).thenReturn(Optional.of(new MenuEntity()));
+
+        assertNotNull(service.createMenu(req));
+        assertNotNull(service.updateMenu(10L, req));
+        assertNotNull(service.getMenuById(10L));
     }
 }
