@@ -39,6 +39,10 @@ management:
   info:
     env:
       enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      environment: ${spring.profiles.active:default}
 
 # Springdoc / Swagger
 springdoc:

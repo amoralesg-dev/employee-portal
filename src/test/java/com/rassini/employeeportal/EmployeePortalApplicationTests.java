@@ -45,7 +45,9 @@ class EmployeePortalApplicationTests {
         mockMvc.perform(get("/actuator/prometheus"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("# HELP")))
-                .andExpect(content().string(containsString("# TYPE")));
+                .andExpect(content().string(containsString("# TYPE")))
+                .andExpect(content().string(containsString("application=\"employee-portal\"")))
+                .andExpect(content().string(containsString("environment=\"test\"")));
     }
 
     @Test
