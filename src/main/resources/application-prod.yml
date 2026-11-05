@@ -4,8 +4,13 @@ server:
 app:
   cors:
     allowed-origins:
-      - https://employee-portal.rassini.com
-      
+      - https://rss-cxp.rassini.com
+  security:
+    oauth2:
+      authorizationserver:
+        issuer: ${OIDC_ISSUER:https://rss-cxp.rassini.com/employee-portal}
+        login-url: ${OIDC_LOGIN_URL:https://rss-cxp.rassini.com/employee-portal/auth/login}
+
 spring:
   datasource:
     url: ${DB_URL:jdbc:mysql://localhost:3306/iam?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}

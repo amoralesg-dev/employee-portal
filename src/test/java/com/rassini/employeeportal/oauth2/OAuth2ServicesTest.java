@@ -103,10 +103,12 @@ class OAuth2ServicesTest {
         assertTrue(registeredClient.getRedirectUris().contains("http://localhost:4201/portal-cxp/callback"));
         assertTrue(registeredClient.getRedirectUris().contains("http://localhost:4200/callback"));
         assertTrue(registeredClient.getRedirectUris().contains("http://localhost:4200/portal-cxp/callback"));
+        assertTrue(registeredClient.getRedirectUris().contains("https://rss-cxp.rassini.com/portal-cxp/callback"));
         assertTrue(registeredClient.getRedirectUris().contains("https://rss-cxp-dev.rassini.com/portal-cxp/callback"));
         assertTrue(registeredClient.getPostLogoutRedirectUris().contains("http://localhost:4201/login"));
         assertTrue(registeredClient.getPostLogoutRedirectUris().contains("http://localhost:4201/logout"));
         assertTrue(registeredClient.getPostLogoutRedirectUris().contains("http://localhost:4200/logout"));
+        assertTrue(registeredClient.getPostLogoutRedirectUris().contains("https://rss-cxp.rassini.com/portal-cxp/logout"));
         assertTrue(registeredClient.getPostLogoutRedirectUris().contains("https://rss-cxp-dev.rassini.com/portal-cxp/logout"));
         assertTrue(registeredClient.getPostLogoutRedirectUris().contains("https://rss-cxp-dev.rassini.com/employee-portal/auth/login"));
         assertTrue(registeredClient.getRedirectUris().stream().noneMatch(uri -> uri.contains("*")));

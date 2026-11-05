@@ -91,12 +91,14 @@ public class JpaRegisteredClientRepository implements RegisteredClientRepository
         }
 
         if ("ms-pagos-client".equals(entity.getClientId())) {
+            builder.redirectUri("https://rss-cxp.rassini.com/portal-cxp/callback");
             builder.redirectUri("https://rss-cxp-dev.rassini.com/portal-cxp/callback");
             builder.redirectUri("http://localhost:4200/portal-cxp/callback");
             builder.redirectUri("http://localhost:4200/callback");
             builder.redirectUri("http://localhost:4201/portal-cxp/callback");
             builder.redirectUri("http://localhost:4201/callback");
 
+            builder.postLogoutRedirectUri("https://rss-cxp.rassini.com/portal-cxp/logout");
             builder.postLogoutRedirectUri("https://rss-cxp-dev.rassini.com/portal-cxp/logout");
             builder.postLogoutRedirectUri("https://rss-cxp-dev.rassini.com/employee-portal/auth/login");
             builder.postLogoutRedirectUri("http://localhost:4200/portal-cxp/logout");
