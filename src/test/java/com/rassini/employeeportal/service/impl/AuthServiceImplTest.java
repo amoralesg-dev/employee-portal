@@ -41,6 +41,7 @@ class AuthServiceImplTest {
     @Mock private AuthenticationManager authManager;
     @Mock private AccessContextService accessService;
     @Mock private PasswordEncoder passwordEncoder;
+    @Mock private com.rassini.employeeportal.service.MfaService mfaService;
 
     @BeforeEach
     void setUp() { 
@@ -146,5 +147,81 @@ class AuthServiceImplTest {
         when(repository.findByUsername("u")).thenReturn(Optional.of(u));
         when(jwtService.isTokenValid(eq("rt"), any())).thenReturn(false);
         assertThrows(RuntimeException.class, () -> service.refresh(req));
+    }
+
+    @Test
+    void testLogin_MfaRequired_ForcedSetup() {
+        LoginRequest req = new LoginRequest("u", "p");
+        UserEntity u = new UserEntity();
+        u.setId(1L);
+        u.setUsername("u");
+        u.setEmail("u@rassini.com");
+        u.setEnabled(true);
+        u.setMfaEnabled(true);
+        u.setMfaSecret(null);
+
+        when(repository.findByUsername("u")).thenReturn(Optional.of(u));
+        when(jwtService.generateTempToken(eq(u), anyString(), eq(true))).thenReturn("temp_setup");
+        when(mfaService.generateSetup(1L, "u@rassini.com")).thenReturn(
+                com.rassini.employeeportal.dto.mfa.MfaSetupResponse.builder().qrCodeUri("data:image/png;base64,x").manualEntryKey("SECRET").build()
+        );
+
+        var res = service.login(req);
+        assertTrue(res.isMfaRequired());
+        assertTrue(res.getPendingResponse().isMfaSetupRequired());
+    }
+
+    @Test
+    void testChangePassword_SuccessAndErrors() {
+        com.rassini.employeeportal.dto.request.ChangePasswordRequest mismatch = new com.rassini.employeeportal.dto.request.ChangePasswordRequest();
+        mismatch.setCurrentPassword("old");
+        mismatch.setNewPassword("new1");
+        mismatch.setConfirmPassword("new2");
+        assertThrows(IllegalArgumentException.class, () -> service.changePassword("u", mismatch));
+
+        com.rassini.employeeportal.dto.request.ChangePasswordRequest valid = new com.rassini.employeeportal.dto.request.ChangePasswordRequest();
+        valid.setCurrentPassword("old");
+        valid.setNewPassword("new1");
+        valid.setConfirmPassword("new1");
+
+        UserEntity u = new UserEntity();
+        u.setUsername("u");
+        u.setPasswordHash("hashed");
+        when(repository.findByUsername("u")).thenReturn(Optional.of(u));
+        when(passwordEncoder.matches("old", "hashed")).thenReturn(false);
+        assertThrows(IllegalArgumentException.class, () -> service.changePassword("u", valid));
+
+        when(passwordEncoder.matches("old", "hashed")).thenReturn(true);
+        when(passwordEncoder.encode("new1")).thenReturn("new_hashed");
+        service.changePassword("u", valid);
+        verify(repository).save(u);
+    }
+
+    @Test
+    void testSetupActivateVerifyAndDisableMfa() {
+        UserEntity u = new UserEntity();
+        u.setId(1L);
+        u.setUsername("u");
+        u.setEmail("u@rassini.com");
+        u.setEnabled(true);
+        u.setMfaRequired(false);
+        when(repository.findByUsername("u")).thenReturn(Optional.of(u));
+
+        when(mfaService.generateSetup(1L, "u@rassini.com")).thenReturn(new com.rassini.employeeportal.dto.mfa.MfaSetupResponse());
+        assertNotNull(service.setupMfa("u"));
+
+        com.rassini.employeeportal.dto.mfa.MfaActivateRequest actReq = new com.rassini.employeeportal.dto.mfa.MfaActivateRequest();
+        actReq.setCode("123456");
+        service.activateMfa("u", actReq);
+        verify(mfaService).activateMfa(1L, "123456");
+
+        com.rassini.employeeportal.dto.mfa.MfaDisableRequest disReq = new com.rassini.employeeportal.dto.mfa.MfaDisableRequest();
+        disReq.setPassword("p");
+        disReq.setCode("123456");
+        service.disableMfa("u", disReq);
+        verify(mfaService).disableMfa(1L, "p", "123456");
+
+        u.setMfaRequired(true);
+        assertThrows(com.rassini.employeeportal.exception.BusinessException.class, () -> service.disableMfa("u", disReq));
     }
 }

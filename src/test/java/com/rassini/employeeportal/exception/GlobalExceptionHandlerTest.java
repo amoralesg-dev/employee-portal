@@ -47,6 +47,12 @@ class GlobalExceptionHandlerTest {
     @MockBean
     private org.springframework.security.core.userdetails.UserDetailsService userDetailsService;
 
+    @MockBean
+    private org.springframework.security.web.context.SecurityContextRepository securityContextRepository;
+
+    @MockBean
+    private com.rassini.employeeportal.security.UserSessionRegistry userSessionRegistry;
+
     private static final String LOGIN_URL  = "/api/v1/auth/login";
     private static final String VALID_BODY = """
             {"username":"u","password":"p"}

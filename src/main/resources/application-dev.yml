@@ -4,12 +4,19 @@ server:
 app:
   cors:
     allowed-origins:
+      - http://10.15.1.37:8080
+      - https://rss-cxp-dev.rassini.com
       - http://localhost:4200
       - http://localhost:4205
+  security:
+    oauth2:
+      authorizationserver:
+        issuer: ${OIDC_ISSUER:https://rss-cxp-dev.rassini.com/employee-portal}
+        login-url: ${OIDC_LOGIN_URL:https://rss-cxp-dev.rassini.com/employee-portal/auth/login}
 
 spring:
   datasource:
-    url: ${DB_URL:jdbc:mysql://localhost:3306/iam?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
+    url: ${DB_URL:jdbc:mysql://10.15.1.27:3306/iam?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
