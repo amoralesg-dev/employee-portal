@@ -1,0 +1,476 @@
+name: CI CD EMPLOYEE-PORTAL DEV
+
+on:
+  push:
+    branches:
+      - dev
+
+  workflow_dispatch:
+    inputs:
+      rollback_backup:
+        description: "Opcional: Nombre del JAR en backup para rollback (ej. employee-portal-9.jar o latest). Dejar vacio para deploy normal."
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: employee-portal-dev
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build Employee Portal
+    if: ${{ github.event.inputs.rollback_backup == '' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar codigo
+        uses: actions/checkout@v4
+
+      - name: Configurar Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Validar versiones
+        run: |
+          java -version
+          mvn -version
+
+      - name: Compilar y ejecutar tests
+        run: mvn clean verify -Dspring.profiles.active=test -e
+
+      - name: Subir reportes Surefire
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: employee-portal-surefire-reports
+          path: target/surefire-reports
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Normalizar nombre del JAR
+        shell: bash
+        run: |
+          SOURCE_JAR=$(find target \
+            -maxdepth 1 \
+            -type f \
+            -name "employee-portal-*.jar" \
+            ! -name "*.jar.original" \
+            | head -n 1)
+
+          if [ -z "$SOURCE_JAR" ]; then
+            echo "No se encontro el JAR ejecutable."
+            exit 1
+          fi
+
+          cp "$SOURCE_JAR" target/employee-portal.jar
+
+          echo "JAR generado:"
+          ls -lh target/employee-portal.jar
+
+      - name: Subir JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: employee-portal-jar
+          path: target/employee-portal.jar
+          if-no-files-found: error
+          retention-days: 7
+
+  deploy-dev:
+    name: Deploy Employee Portal DEV
+    needs: [build]
+
+    if: >
+      always() &&
+      (needs.build.result == 'success' || (github.event_name == 'workflow_dispatch' && github.event.inputs.rollback_backup != '')) &&
+      github.ref == 'refs/heads/dev' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+
+    runs-on:
+      - self-hosted
+      - Windows
+      - X64
+      - backend
+      - employee-portal
+      - dev
+
+    steps:
+      - name: Preparar carpeta temporal
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $deployPath = 'C:\deploy\employee-portal'
+
+          if (-not (Test-Path $deployPath)) {
+            New-Item -ItemType Directory -Path $deployPath -Force | Out-Null
+          }
+
+          Get-ChildItem -Path $deployPath -Force -ErrorAction SilentlyContinue |
+            Remove-Item -Recurse -Force
+
+          Write-Host "Carpeta preparada: $deployPath"
+
+      - name: Descargar JAR generado
+        if: ${{ github.event.inputs.rollback_backup == '' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: employee-portal-jar
+          path: C:\deploy\employee-portal
+
+      - name: Preparar JAR desde backup (Modo Rollback)
+        if: ${{ github.event.inputs.rollback_backup != '' }}
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $backupPath = 'C:\apps\employee-portal\backup'
+          $requested = '${{ github.event.inputs.rollback_backup }}'.Trim()
+
+          if ($requested -eq 'latest') {
+            $selected = Get-ChildItem -Path $backupPath -Filter 'employee-portal-*.jar' -ErrorAction Stop |
+              Sort-Object LastWriteTime -Descending |
+              Select-Object -First 1
+          } else {
+            $candidatePath = Join-Path $backupPath $requested
+            if (-not (Test-Path $candidatePath)) {
+              throw "No existe el backup solicitado: $candidatePath"
+            }
+            $selected = Get-Item $candidatePath
+          }
+
+          if (-not $selected) {
+            throw "No se encontraron backups disponibles en $backupPath"
+          }
+
+          Copy-Item -LiteralPath $selected.FullName -Destination 'C:\deploy\employee-portal\employee-portal.jar' -Force
+          Write-Host "Rollback preparado desde backup: $($selected.FullName)"
+
+      - name: Validar archivos requeridos
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $sourceJar = 'C:\deploy\employee-portal\employee-portal.jar'
+          $startScript = 'C:\apps\employee-portal\start-employee-portal.bat'
+          $envScript = 'C:\apps\employee-portal\config\employee-portal.env.cmd'
+
+          if (-not (Test-Path $sourceJar)) {
+            throw "No existe el artifact: $sourceJar"
+          }
+
+          if (-not (Test-Path $startScript)) {
+            throw "No existe el script de arranque: $startScript"
+          }
+
+          if (-not (Test-Path $envScript)) {
+            throw "No existe el archivo de ambiente: $envScript"
+          }
+
+          $artifact = Get-Item $sourceJar
+
+          if ($artifact.Length -le 0) {
+            throw 'El artifact descargado esta vacio.'
+          }
+
+          $artifact | Select-Object FullName, Length, LastWriteTime
+
+      - name: Detener servicio DEV
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $serviceName = 'employee-portal-dev'
+          $service = Get-Service -Name $serviceName -ErrorAction Stop
+
+          if ($service.Status -ne 'Stopped') {
+            Stop-Service -Name $serviceName -Force -ErrorAction Stop
+          }
+
+          $maxAttempts = 20
+
+          for ($i = 1; $i -le $maxAttempts; $i++) {
+            $service = Get-Service -Name $serviceName -ErrorAction Stop
+
+            Write-Host "Intento $i de $maxAttempts. Estado: $($service.Status)"
+
+            if ($service.Status -eq 'Stopped') {
+              Write-Host "Servicio $serviceName detenido correctamente."
+              exit 0
+            }
+
+            Start-Sleep -Seconds 2
+          }
+
+          $service = Get-Service -Name $serviceName -ErrorAction Stop
+          throw "El servicio $serviceName no se detuvo. Estado: $($service.Status)"
+
+      - name: Crear backup del JAR actual
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $currentJar = 'C:\apps\employee-portal\employee-portal.jar'
+          $versionMetaPath = 'C:\apps\employee-portal\current-version.json'
+          $backupPath = 'C:\apps\employee-portal\backup'
+
+          New-Item -ItemType Directory -Path $backupPath -Force | Out-Null
+
+          if (Test-Path $currentJar) {
+            $backupTag = "$env:GITHUB_RUN_NUMBER"
+            if (Test-Path $versionMetaPath) {
+              try {
+                $meta = Get-Content $versionMetaPath -Raw | ConvertFrom-Json
+                if ($meta.runNumber) {
+                  $backupTag = "$($meta.runNumber)"
+                }
+              } catch {
+                Write-Host 'Aviso: no se pudo leer current-version.json, usando GITHUB_RUN_NUMBER actual.'
+              }
+            }
+            $backupName = "employee-portal-$backupTag.jar"
+            $backupJar = Join-Path $backupPath $backupName
+
+            Copy-Item -LiteralPath $currentJar -Destination $backupJar -Force
+            Write-Host "Backup generado: $backupJar"
+          } else {
+            Write-Host 'No existe un JAR anterior para respaldar.'
+          }
+
+      - name: Conservar ultimos 6 backups
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $backupPath = 'C:\apps\employee-portal\backup'
+
+          $backups = Get-ChildItem `
+            -Path $backupPath `
+            -Filter 'employee-portal-*.jar' `
+            -ErrorAction SilentlyContinue |
+            Sort-Object LastWriteTime -Descending
+
+          $backups |
+            Select-Object -Skip 6 |
+            Remove-Item -Force
+
+          Write-Host 'Backups conservados:'
+
+          Get-ChildItem `
+            -Path $backupPath `
+            -Filter 'employee-portal-*.jar' `
+            -ErrorAction SilentlyContinue |
+            Sort-Object LastWriteTime -Descending |
+            Select-Object Name, Length, LastWriteTime
+
+      - name: Copiar nuevo JAR
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $sourceJar = 'C:\deploy\employee-portal\employee-portal.jar'
+          $targetJar = 'C:\apps\employee-portal\employee-portal.jar'
+
+          if (-not (Test-Path $sourceJar)) {
+            throw "No existe el JAR fuente: $sourceJar"
+          }
+
+          Copy-Item `
+            -LiteralPath $sourceJar `
+            -Destination $targetJar `
+            -Force `
+            -ErrorAction Stop
+
+          if (-not (Test-Path $targetJar)) {
+            throw "No existe el JAR desplegado: $targetJar"
+          }
+
+          $source = Get-Item $sourceJar
+          $target = Get-Item $targetJar
+
+          if ($source.Length -ne $target.Length) {
+            throw 'El tamano del JAR desplegado no coincide con el artifact.'
+          }
+
+          $sourceHash = (Get-FileHash -Path $sourceJar -Algorithm SHA256).Hash
+          $targetHash = (Get-FileHash -Path $targetJar -Algorithm SHA256).Hash
+
+          if ($sourceHash -ne $targetHash) {
+            throw 'El hash del JAR desplegado no coincide con el artifact.'
+          }
+
+          Write-Host 'JAR desplegado correctamente:'
+          $target | Select-Object FullName, Length, LastWriteTime
+          Write-Host "SHA256: $targetHash"
+
+          $shortSha = if ($env:GITHUB_SHA) { $env:GITHUB_SHA.Substring(0, [Math]::Min(7, $env:GITHUB_SHA.Length)) } else { 'unknown' }
+          $versionMeta = [ordered]@{
+            application    = 'employee-portal'
+            runNumber      = "$env:GITHUB_RUN_NUMBER"
+            commitSha      = "$env:GITHUB_SHA"
+            shortSha       = $shortSha
+            rollbackBackup = '${{ github.event.inputs.rollback_backup }}'
+            deployedAt     = (Get-Date).ToString('yyyy-MM-ddTHH:mm:ssK')
+            jarSize        = $target.Length
+            sha256         = $targetHash
+          }
+          $versionMeta | ConvertTo-Json -Depth 5 | Set-Content -Path 'C:\apps\employee-portal\current-version.json' -Encoding UTF8
+          Write-Host 'Metadatos de version activa registrados en C:\apps\employee-portal\current-version.json'
+
+      - name: Asegurar estructura de logs y desacoplar AppStdout en NSSM para Logback
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $serviceName = 'employee-portal-dev'
+          $logsPath = 'C:\apps\employee-portal\logs'
+          $archivePath = Join-Path $logsPath 'archive'
+          $stderrLog = Join-Path $logsPath 'employee-portal-error.log'
+
+          New-Item -ItemType Directory -Path $logsPath -Force | Out-Null
+          New-Item -ItemType Directory -Path $archivePath -Force | Out-Null
+
+          $nssmCmd = Get-Command nssm.exe -ErrorAction SilentlyContinue
+          $nssmExe = if ($nssmCmd) { $nssmCmd.Source } else { $null }
+          if (-not $nssmExe) {
+            foreach ($candidate in @('C:\nssm\nssm.exe', 'C:\tools\nssm\nssm.exe', 'C:\Program Files\nssm\nssm.exe', 'C:\Windows\System32\nssm.exe')) {
+              if (Test-Path $candidate) {
+                $nssmExe = $candidate
+                break
+              }
+            }
+          }
+
+          $nssmRegPath = "HKLM:\SYSTEM\CurrentControlSet\Services\$serviceName\Parameters"
+
+          if ($nssmExe) {
+            Write-Host "Usando nssm.exe en: $nssmExe"
+            & $nssmExe reset $serviceName AppStdout | Out-Host
+            & $nssmExe set $serviceName AppStderr $stderrLog | Out-Host
+          } elseif (Test-Path $nssmRegPath) {
+            $params = Get-ItemProperty -Path $nssmRegPath
+            if ($params.PSObject.Properties.Name -contains 'AppStdout' -and $params.AppStdout -like '*employee-portal.log') {
+              Remove-ItemProperty -Path $nssmRegPath -Name 'AppStdout' -ErrorAction SilentlyContinue
+              Write-Host 'AppStdout desacoplado de employee-portal.log en registro NSSM.'
+            }
+            Set-ItemProperty -Path $nssmRegPath -Name 'AppStderr' -Value $stderrLog -Type ExpandString
+          }
+
+          if (Test-Path $nssmRegPath) {
+            Write-Host '=== Parametros actuales del servicio NSSM ==='
+            Get-ItemProperty -Path $nssmRegPath |
+              Select-Object Application, AppDirectory, AppParameters, AppStdout, AppStderr |
+              Format-List
+          }
+
+      - name: Iniciar servicio DEV
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $serviceName = 'employee-portal-dev'
+          $service = Get-Service -Name $serviceName -ErrorAction Stop
+
+          if ($service.Status -ne 'Running') {
+            Start-Service -Name $serviceName -ErrorAction Stop
+          }
+
+          $maxAttempts = 20
+
+          for ($i = 1; $i -le $maxAttempts; $i++) {
+            $service = Get-Service -Name $serviceName -ErrorAction Stop
+
+            Write-Host "Intento $i de $maxAttempts. Estado: $($service.Status)"
+
+            if ($service.Status -eq 'Running') {
+              Write-Host "Servicio $serviceName en RUNNING."
+              exit 0
+            }
+
+            Start-Sleep -Seconds 2
+          }
+
+          $service = Get-Service -Name $serviceName -ErrorAction Stop
+          throw "El servicio $serviceName no quedo en RUNNING. Estado: $($service.Status)"
+
+      - name: Esperar Health DEV
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Continue'
+
+          $url = 'http://127.0.0.1:8083/employee-portal/actuator/health'
+          $maxAttempts = 24
+
+          for ($i = 1; $i -le $maxAttempts; $i++) {
+            Write-Host "Intento $i de $maxAttempts"
+
+            try {
+              $response = Invoke-RestMethod `
+                -Uri $url `
+                -Method Get `
+                -TimeoutSec 15
+
+              $response | ConvertTo-Json -Depth 10
+
+              if ($response.status -eq 'UP') {
+                Write-Host 'Employee Portal DEV esta UP.'
+
+                Write-Host '=== Validacion de current-version.json ==='
+                if (Test-Path 'C:\apps\employee-portal\current-version.json') {
+                  Get-Content 'C:\apps\employee-portal\current-version.json'
+                }
+
+                Write-Host '=== Validacion de backups en C:\apps\employee-portal\backup (maximo 6) ==='
+                $bks = Get-ChildItem -Path 'C:\apps\employee-portal\backup' -Filter 'employee-portal-*.jar' -ErrorAction SilentlyContinue |
+                  Sort-Object LastWriteTime -Descending
+                Write-Host "Total backups: $($bks.Count)"
+                $bks | Select-Object Name, Length, LastWriteTime | Out-Host
+
+                Write-Host '=== Validacion de estructura de logs y escritura de Logback ==='
+                Get-ChildItem -Path 'C:\apps\employee-portal\logs' -Force -ErrorAction SilentlyContinue |
+                  Select-Object Name, Mode, Length, LastWriteTime | Out-Host
+                if (Test-Path 'C:\apps\employee-portal\logs\employee-portal.log') {
+                  Write-Host 'Ultimas 15 lineas de C:\apps\employee-portal\logs\employee-portal.log:'
+                  Get-Content 'C:\apps\employee-portal\logs\employee-portal.log' -Tail 15 | Out-Host
+                }
+
+                exit 0
+              }
+
+              Write-Host "Health respondio con status: $($response.status)"
+            }
+            catch {
+              Write-Host "Health aun no disponible: $($_.Exception.Message)"
+            }
+
+            Start-Sleep -Seconds 5
+          }
+
+          Write-Host 'Employee Portal DEV no alcanzo estado UP.'
+
+          Get-Service -Name 'employee-portal-dev' |
+            Format-List Name, Status
+
+          netstat -ano |
+            Select-String ':8083'
+
+          $stdoutLog = 'C:\apps\employee-portal\logs\employee-portal.log'
+          $stderrLog = 'C:\apps\employee-portal\logs\employee-portal-error.log'
+
+          if (Test-Path $stdoutLog) {
+            Write-Host 'Ultimas lineas de stdout:'
+            Get-Content $stdoutLog -Tail 100
+          }
+
+          if (Test-Path $stderrLog) {
+            Write-Host 'Ultimas lineas de stderr:'
+            Get-Content $stderrLog -Tail 100
+          }
+
+          exit 1

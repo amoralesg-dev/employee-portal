@@ -222,5 +222,23 @@ public class E2ERealDbTest {
         String decrypted = mfaCryptoService.decrypt(secretDb);
         assertThat(decrypted).isEqualTo(RAW_SECRET);
         System.out.println("-> OK: Secret comienza con v1: y es diferente a RAW_SECRET. Puede descifrarse correctamente.");
+
+        System.out.println("\n=== 12. CORS Preflight OPTIONS /api/v1/auth/login desde https://rss-cxp-dev.rassini.com ===");
+        HttpHeaders corsHeaders = new HttpHeaders();
+        corsHeaders.set("Origin", "https://rss-cxp-dev.rassini.com");
+        corsHeaders.set("Access-Control-Request-Method", "POST");
+        corsHeaders.set("Access-Control-Request-Headers", "content-type,authorization");
+        ResponseEntity<Void> corsRes = restTemplate.exchange(
+                "/api/v1/auth/login",
+                HttpMethod.OPTIONS,
+                new HttpEntity<>(null, corsHeaders),
+                Void.class
+        );
+        assertThat(corsRes.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(corsRes.getHeaders().getAccessControlAllowOrigin()).isEqualTo("https://rss-cxp-dev.rassini.com");
+        assertThat(corsRes.getHeaders().getAccessControlAllowCredentials()).isTrue();
+        assertThat(corsRes.getHeaders().getAccessControlAllowMethods()).contains(HttpMethod.POST, HttpMethod.GET, HttpMethod.OPTIONS);
+        System.out.println("-> OK: Preflight CORS HTTP 200, Access-Control-Allow-Origin=" + corsRes.getHeaders().getAccessControlAllowOrigin()
+                + ", Access-Control-Allow-Credentials=" + corsRes.getHeaders().getAccessControlAllowCredentials());
     }
 }
