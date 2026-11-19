@@ -39,6 +39,18 @@ public class SecurityConfig {
     private final Environment environment;
 
     @Bean
+    @Order(1)
+    public SecurityFilterChain activeUsersOAuth2FilterChain(HttpSecurity http) throws Exception {
+        http
+            .securityMatcher("/api/v1/users/active")
+            .csrf(AbstractHttpConfigurer::disable)
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(auth -> auth.anyRequest().hasAnyAuthority("SCOPE_users.read", "USER_VIEW"))
+            .oauth2ResourceServer(oauth2 -> oauth2.jwt(org.springframework.security.config.Customizer.withDefaults()));
+        return http.build();
+    }
+
+    @Bean
     @Order(2)
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
         http

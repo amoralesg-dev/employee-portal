@@ -48,6 +48,43 @@ public class UserController {
         return ResponseEntity.ok(ApiResponse.success("Usuarios obtenidos exitosamente", users));
     }
 
+    @GetMapping("/active")
+    @Operation(summary = "Listar usuarios activos", description = "Retorna usuarios activos paginados con búsqueda por username o correo")
+    public ResponseEntity<ApiResponse<List<java.util.Map<String, Object>>>> getActiveUsers(
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            org.springframework.security.core.Authentication auth) {
+        boolean hasUserView = auth != null && auth.getAuthorities().stream()
+                .anyMatch(a -> "USER_VIEW".equals(a.getAuthority()) || "SCOPE_users.read".equals(a.getAuthority()));
+        boolean hasScopeClaim = auth != null && auth.getPrincipal() instanceof org.springframework.security.oauth2.jwt.Jwt jwt
+                && ((jwt.getClaimAsStringList("scope") != null && jwt.getClaimAsStringList("scope").contains("users.read"))
+                    || (jwt.getClaimAsString("scope") != null && java.util.Arrays.asList(jwt.getClaimAsString("scope").split(" ")).contains("users.read")));
+        if (!hasUserView && !hasScopeClaim) {
+            throw new org.springframework.security.access.AccessDeniedException("Requiere permiso USER_VIEW o scope users.read");
+        }
+        String q = search != null ? search.trim().toLowerCase() : "";
+        int safePage = Math.max(0, page);
+        int safeSize = Math.min(Math.max(1, size), 100);
+        List<java.util.Map<String, Object>> filtered = userService.getUsers().stream()
+                .filter(u -> Boolean.TRUE.equals(u.getEnabled()))
+                .filter(u -> q.isEmpty()
+                        || (u.getUsername() != null && u.getUsername().toLowerCase().contains(q))
+                        || (u.getEmail() != null && u.getEmail().toLowerCase().contains(q)))
+                .skip((long) safePage * safeSize)
+                .limit(safeSize)
+                .map(u -> {
+                    java.util.Map<String, Object> item = new java.util.LinkedHashMap<>();
+                    item.put("id", u.getId());
+                    item.put("username", u.getUsername());
+                    item.put("nombre", u.getUsername());
+                    item.put("email", u.getEmail());
+                    return item;
+                })
+                .toList();
+        return ResponseEntity.ok(ApiResponse.success("Usuarios activos obtenidos exitosamente", filtered));
+    }
+
     @GetMapping("/{id}")
     @Operation(summary = "Obtener usuario por ID", description = "Retorna un usuario específico por su ID")
     @ApiResponses({
