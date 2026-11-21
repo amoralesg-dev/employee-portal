@@ -41,15 +41,18 @@ public class AccessContextServiceImpl implements AccessContextService {
     private final BusinessUnitRepository businessUnitRepository;
     private final BusinessUnitMapper businessUnitMapper;
     private final com.rassini.employeeportal.service.MenuUrlResolverService menuUrlResolverService;
+    private final org.springframework.core.env.Environment environment;
 
     public AccessContextServiceImpl(UserRepository userRepository, 
                                     BusinessUnitRepository businessUnitRepository,
                                     BusinessUnitMapper businessUnitMapper,
-                                    com.rassini.employeeportal.service.MenuUrlResolverService menuUrlResolverService) {
+                                    com.rassini.employeeportal.service.MenuUrlResolverService menuUrlResolverService,
+                                    org.springframework.core.env.Environment environment) {
         this.userRepository = userRepository;
         this.businessUnitRepository = businessUnitRepository;
         this.businessUnitMapper = businessUnitMapper;
         this.menuUrlResolverService = menuUrlResolverService;
+        this.environment = environment;
     }
 
     @Override
@@ -177,6 +180,15 @@ public class AccessContextServiceImpl implements AccessContextService {
                 .toList();
 
         String resolvedUrl = menuUrlResolverService.resolveUrl(entity, user);
+        String appCode = entity.getApplication() != null ? entity.getApplication().getCode() : null;
+        if ((resolvedUrl == null || resolvedUrl.isBlank()) && appCode != null && entity.getRoute() != null && !entity.getRoute().isBlank()) {
+            String baseUrl = environment.getProperty("corporate.navigation.app-base-urls." + appCode);
+            if (baseUrl != null && !baseUrl.isBlank()) {
+                String cleanBase = baseUrl.replaceAll("/+$", "");
+                String cleanRoute = entity.getRoute().startsWith("/") ? entity.getRoute() : "/" + entity.getRoute();
+                resolvedUrl = cleanBase + cleanRoute;
+            }
+        }
 
         return MenuResponse.builder()
                 .id(entity.getId())
@@ -187,11 +199,14 @@ public class AccessContextServiceImpl implements AccessContextService {
                 .orderIndex(entity.getOrderIndex())
                 .targetType(entity.getTargetType())
                 .externalUrl(entity.getExternalUrl())
+                .resolvedUrl(resolvedUrl)
                 .openInNewTab(entity.getOpenInNewTab())
                 .appType(entity.getAppType())
                 .authType(entity.getAuthType())
                 .resolvedUrl(resolvedUrl)
                 .parentId(entity.getParent() != null ? entity.getParent().getId() : null)
+                .applicationId(entity.getApplication() != null ? entity.getApplication().getId() : null)
+                .applicationCode(entity.getApplication() != null ? entity.getApplication().getCode() : null)
                 .children(childResponses)
                 .build();
     }

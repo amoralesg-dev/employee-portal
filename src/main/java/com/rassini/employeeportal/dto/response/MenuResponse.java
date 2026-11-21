@@ -56,6 +56,9 @@ public class MenuResponse {
     /** ID de la aplicación a la que pertenece el menú. */
     private Long applicationId;
 
+    /** Código de la aplicación a la que pertenece el menú. */
+    private String applicationCode;
+
     /** Submenús hijos. Solo se pobla en consultas jerárquicas. */
     private List<MenuResponse> children;
 }
