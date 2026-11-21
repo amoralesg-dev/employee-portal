@@ -14,6 +14,11 @@ app:
         issuer: ${OIDC_ISSUER:https://rss-cxp-dev.rassini.com/employee-portal}
         login-url: ${OIDC_LOGIN_URL:https://rss-cxp-dev.rassini.com/employee-portal/auth/login}
 
+corporate:
+  navigation:
+    app-base-urls:
+      EMPLOYEE_PORTAL: ${EMPLOYEE_PORTAL_BASE_URL:https://rss-cxp-dev.rassini.com/employee-portal}
+
 spring:
   datasource:
     url: ${DB_URL:jdbc:mysql://10.15.1.27:3306/iam?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}

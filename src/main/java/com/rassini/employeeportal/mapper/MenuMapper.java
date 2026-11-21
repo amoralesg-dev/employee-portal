@@ -74,6 +74,7 @@ public class MenuMapper {
                 .parameters(parameterResponses)
                 .parentId(entity.getParent() != null ? entity.getParent().getId() : null)
                 .applicationId(entity.getApplication() != null ? entity.getApplication().getId() : null)
+                .applicationCode(entity.getApplication() != null ? entity.getApplication().getCode() : null)
                 .children(children)
                 .build();
     }
