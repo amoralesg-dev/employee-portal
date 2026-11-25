@@ -19,6 +19,10 @@ corporate:
     app-base-urls:
       EMPLOYEE_PORTAL: ${EMPLOYEE_PORTAL_BASE_URL:https://rss-cxp-dev.rassini.com/employee-portal}
 
+portal:
+  media:
+    path: ${PORTAL_MEDIA_PATH:C:/apps/employee-portal/data/media}
+
 spring:
   datasource:
     url: ${DB_URL:jdbc:mysql://10.15.1.27:3306/iam?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}

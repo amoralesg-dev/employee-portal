@@ -3,6 +3,23 @@ spring:
     name: employee-portal
   profiles:
     active: dev
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
+
+portal:
+  media:
+    path: ${PORTAL_MEDIA_PATH:./data/media}
+    max-size-bytes: 5242880
+  home:
+    limits:
+      secondary-news: 4
+      campaigns: 3
+      weekly-info: 5
+      events: 5
+      quick-access: 8
+      notices: 5
 
 app:
   security:

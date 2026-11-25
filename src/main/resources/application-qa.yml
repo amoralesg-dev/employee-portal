@@ -5,6 +5,10 @@ app:
   cors:
     allowed-origins:
       - https://qa.rassini.com
+
+portal:
+  media:
+    path: ${PORTAL_MEDIA_PATH:C:/apps/employee-portal/data/media}
       
 spring:
   datasource:
