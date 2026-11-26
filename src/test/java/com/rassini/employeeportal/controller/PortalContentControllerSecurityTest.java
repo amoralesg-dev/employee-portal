@@ -42,6 +42,7 @@ class PortalContentControllerSecurityTest {
     @MockBean private JwtService jwtService;
     @MockBean private CustomUserDetailsService customUserDetailsService;
     @MockBean private CorsProperties corsProperties;
+    @MockBean private org.springframework.security.oauth2.jwt.JwtDecoder jwtDecoder;
 
     @BeforeEach
     void setUp() throws Exception {
