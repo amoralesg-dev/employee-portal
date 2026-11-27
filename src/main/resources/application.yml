@@ -43,6 +43,12 @@ app:
 server:
   servlet:
     context-path: /employee-portal
+    session:
+      timeout: ${IAM_SESSION_TIMEOUT:8h}
+      cookie:
+        http-only: true
+        same-site: lax
+        secure: ${IAM_SESSION_COOKIE_SECURE:false}
 
 logging:
   file:
