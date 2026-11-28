@@ -35,3 +35,6 @@ build/
 ### Logs ###
 logs/
 *.log
+
+# Almacenamiento local de medios del portal
+data/
