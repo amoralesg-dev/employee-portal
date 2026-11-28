@@ -154,7 +154,7 @@ class PortalEventCalendarServiceImplTest {
 
         // Expired publish window
         event.setStatus(PortalContentStatus.PUBLISHED);
-        event.setPublishTo(LocalDateTime.now().minusMinutes(5));
+        event.setPublishTo(LocalDateTime.now(java.time.ZoneId.of("America/Mexico_City")).minusMinutes(5));
         assertThatThrownBy(() -> service.generateIcs(10L, 42L, "es-MX")).isInstanceOf(ResourceNotFoundException.class);
 
         // Out of audience
