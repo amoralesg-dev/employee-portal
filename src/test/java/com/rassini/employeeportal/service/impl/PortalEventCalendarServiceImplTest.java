@@ -107,28 +107,35 @@ class PortalEventCalendarServiceImplTest {
 
     @Test
     void generateIcs_withExactOneMinuteRange_shouldPreserveExactDtStartAndDtEnd() {
-        event.setEventStart(LocalDateTime.of(2026, 11, 27, 10, 59, 0));
-        event.setEventEnd(LocalDateTime.of(2026, 11, 27, 11, 0, 0));
+        var fmt = java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss");
+        LocalDateTime base = LocalDateTime.now().plusDays(10).withHour(10).withMinute(0).withSecond(0).withNano(0);
+        LocalDateTime start = base.withMinute(59);
+        LocalDateTime end = base.plusHours(1);
+        event.setEventStart(start);
+        event.setEventEnd(end);
         when(userRepository.findById(10L)).thenReturn(Optional.of(user));
         when(contentRepository.findById(42L)).thenReturn(Optional.of(event));
 
         PortalEventCalendarService.CalendarDownload dl = service.generateIcs(10L, 42L, "es-MX");
         assertThat(dl.content())
-                .contains("DTSTART;TZID=America/Mexico_City:20261127T105900")
-                .contains("DTEND;TZID=America/Mexico_City:20261127T110000");
+                .contains("DTSTART;TZID=America/Mexico_City:" + start.format(fmt))
+                .contains("DTEND;TZID=America/Mexico_City:" + end.format(fmt));
     }
 
     @Test
     void generateIcs_withoutEventEnd_shouldDefaultToOneHourDuration() {
-        event.setEventStart(LocalDateTime.of(2026, 11, 27, 10, 0, 0));
+        var fmt = java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss");
+        LocalDateTime start = LocalDateTime.now().plusDays(10).withHour(10).withMinute(0).withSecond(0).withNano(0);
+        LocalDateTime expectedEnd = start.plusHours(1);
+        event.setEventStart(start);
         event.setEventEnd(null);
         when(userRepository.findById(10L)).thenReturn(Optional.of(user));
         when(contentRepository.findById(42L)).thenReturn(Optional.of(event));
 
         PortalEventCalendarService.CalendarDownload dl = service.generateIcs(10L, 42L, "es-MX");
         assertThat(dl.content())
-                .contains("DTSTART;TZID=America/Mexico_City:20261127T100000")
-                .contains("DTEND;TZID=America/Mexico_City:20261127T110000");
+                .contains("DTSTART;TZID=America/Mexico_City:" + start.format(fmt))
+                .contains("DTEND;TZID=America/Mexico_City:" + expectedEnd.format(fmt));
     }
 
     @Test
